@@ -1,0 +1,31 @@
+{
+  "name": "parkease-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ParkEase - Professional Online Parking Reservation Platform Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:mobile": "npm run start --workspace=apps/mobile",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "test:backend": "cd backend && pytest",
+    "lint": "npm run lint --workspaces"
+  },
+  "keywords": [
+    "parking",
+    "reservation",
+    "fastapi",
+    "react",
+    "expo",
+    "react-native",
+    "postgresql",
+    "monorepo"
+  ],
+  "author": "ParkEase Team",
+  "license": "MIT"
+}

@@ -1,0 +1,75 @@
+# Root & Workspace Environment Variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.example
+
+# Node Dependencies & Workspaces
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# Build Outputs & Bundles
+dist/
+build/
+out/
+.next/
+.vite/
+*.tsbuildinfo
+
+# Python & FastAPI
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
+*.sqlite
+*.sqlite3
+!alembic/
+!alembic.ini
+
+# Expo & React Native (Mobile)
+.expo/
+.expo-shared/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+ios/Pods/
+ios/build/
+*.apk
+*.aab
+
+# IDE & OS Metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Temporary Files & Local Logs
+tmp/
+temp/
+*.log
