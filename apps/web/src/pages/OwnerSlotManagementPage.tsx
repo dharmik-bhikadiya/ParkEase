@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft,
   Plus,
   Edit2,
   X,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { parkingApi } from '../api/parkingApi';
 import { ParkingLocation, ParkingSlot, SlotStatus, VehicleType } from '@parkease/shared';
+import { OwnerLayout } from '../components/owner/OwnerLayout';
 
 export const OwnerSlotManagementPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
   const [parking, setParking] = useState<ParkingLocation | null>(null);
   const [slots, setSlots] = useState<ParkingSlot[]>([]);
@@ -98,36 +96,21 @@ export const OwnerSlotManagementPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F9F5] flex flex-col items-center justify-center p-6">
-        <div className="w-10 h-10 border-4 border-[#176B4D] border-t-transparent rounded-full animate-spin" />
-        <p className="mt-4 text-sm font-semibold text-gray-600">Loading Visual Slot Layout...</p>
-      </div>
+      <OwnerLayout>
+        <div className="py-16 text-center">
+          <div className="w-10 h-10 border-4 border-[#176B4D] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="mt-4 text-sm font-semibold text-gray-600">Loading Visual Slot Layout...</p>
+        </div>
+      </OwnerLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F9F5] py-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-8">
-      {/* Back Button */}
-      <button
-        onClick={() => navigate('/owner/dashboard')}
-        className="inline-flex items-center gap-2 text-sm font-bold text-[#176B4D] hover:underline cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Owner Dashboard
-      </button>
-
-      {/* HEADER & TOP CONTROLS */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-200/60 pb-6">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] text-xs font-bold mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> Interactive Grid Control
-          </div>
-          <h1 className="text-3xl font-extrabold text-[#18342A] tracking-tight">
-            Visual Slot Management — {parking?.name}
-          </h1>
-          <p className="text-xs text-gray-500 font-medium mt-0.5">
-            Click any slot square below to block, unblock, change vehicle type, or set maintenance status.
-          </p>
-        </div>
+    <OwnerLayout
+      title={`Visual Slot Management — ${parking?.name || 'Parking Hub'}`}
+      subtitle="Click any slot square below to block, unblock, change vehicle type, or set maintenance status."
+    >
+      <div className="space-y-6">
 
         <Button
           variant="primary"
@@ -332,6 +315,6 @@ export const OwnerSlotManagementPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </OwnerLayout>
   );
 };

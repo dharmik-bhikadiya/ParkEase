@@ -59,7 +59,7 @@ def scan_entry_qr(
     """
     Validate ENTRY QR pass at barrier gate (Staff/Owner/Admin).
     """
-    if current_user.role not in [UserRole.PARKING_STAFF, UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.DRIVER, UserRole.USER]:
+    if current_user.role not in [UserRole.PARKING_STAFF, UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.DRIVER, UserRole.USER]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Unauthorized gate scanning access."
@@ -80,7 +80,7 @@ def scan_exit_qr(
     """
     Validate EXIT QR pass at barrier gate (Staff/Owner/Admin).
     """
-    if current_user.role not in [UserRole.PARKING_STAFF, UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.DRIVER, UserRole.USER]:
+    if current_user.role not in [UserRole.PARKING_STAFF, UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.DRIVER, UserRole.USER]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Unauthorized gate scanning access."

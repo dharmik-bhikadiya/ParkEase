@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     # Google Auth OAuth 2.0
     GOOGLE_CLIENT_ID: str = ""
 
+    # Payment Gateway Options
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    PAYMENT_PROVIDER: str = "SANDBOX"
+
     model_config = SettingsConfigDict(
         env_file=(str(ROOT_ENV_FILE), str(LOCAL_ENV_FILE), ".env"),
         env_file_encoding="utf-8",

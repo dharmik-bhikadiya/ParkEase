@@ -8,7 +8,7 @@ ParkEase utilizes SQLAlchemy 2.0 ORM with PostgreSQL for production environments
 ## Core Data Models
 
 1. **`User` (`users`)**:
-   - `id`, `email`, `hashed_password`, `full_name`, `phone_number`, `role` (`DRIVER`, `PARKING_OWNER`, `PARKING_STAFF`, `ADMIN`, `SUPER_ADMIN`), `is_active`, `google_id`, `created_at`.
+   - `id`, `email`, `hashed_password`, `full_name`, `phone_number`, `role` (`DRIVER`, `PARKING_OWNER`, `PARKING_STAFF`, `ADMIN`), `is_active`, `google_id`, `created_at`.
 2. **`ParkingLocation` (`parking_locations`)**:
    - `id`, `name`, `address`, `city`, `area`, `latitude`, `longitude`, `owner_id`, `hourly_rate`, `status` (`PENDING_APPROVAL`, `ACTIVE`, `REJECTED`), `total_slots`.
 3. **`ParkingSlot` (`parking_slots`)**:

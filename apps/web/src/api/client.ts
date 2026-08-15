@@ -19,34 +19,44 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for error normalization
+// Response interceptor for friendly error normalization
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    let message = 'An unexpected error occurred';
+    let message = 'Unable to complete your request right now. Please try again.';
     let status = error.response?.status || 500;
 
-    if (!error.response) {
+    if (!error.response || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
       // Network Error or server offline
-      message = 'Unable to connect to the server. Please check your connection and try again.';
+      message = 'Unable to connect to ParkEase right now. Please check your connection and try again.';
       status = 0;
     } else if (error.response.data?.detail) {
-      message = typeof error.response.data.detail === 'string'
-        ? error.response.data.detail
-        : JSON.stringify(error.response.data.detail);
+      const detail = error.response.data.detail;
+      if (typeof detail === 'string') {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message = detail.map((d: any) => d.msg || d.message).join(', ');
+      } else {
+        message = JSON.stringify(detail);
+      }
     } else if (error.response.data?.message) {
       message = error.response.data.message;
     } else if (status === 401) {
-      message = 'Session expired. Please sign in again.';
+      message = 'Your session has expired. Please sign in to continue.';
     } else if (status === 403) {
-      message = 'Access denied. You do not have permission.';
+      message = 'Access restricted. You do not have permission to view this resource.';
     } else if (status === 404) {
-      message = 'Requested resource not found.';
+      message = 'The requested information or parking resource could not be found.';
+    } else if (status === 422) {
+      message = 'Please double check the entered information and try again.';
+    } else if (status >= 500) {
+      message = 'ParkEase is currently experiencing technical difficulties. Please try again in a few moments.';
     }
 
     const customError = {
       message,
       status,
+      originalError: error,
     };
     return Promise.reject(customError);
   }

@@ -48,6 +48,8 @@ const MOCK_PARKING_LOCATIONS = [
   },
 ];
 
+import { DigitalMetricDisplay } from '../../src/components/DigitalMetricDisplay';
+
 export default function FindParkingScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,8 +139,20 @@ export default function FindParkingScreen() {
               </View>
 
               <View style={styles.footerRow}>
-                <Text style={styles.slotsText}>{item.availableSlots} / {item.totalSlots} Slots Free</Text>
-                <Text style={styles.priceText}>From ₹{item.price}/hr</Text>
+                <DigitalMetricDisplay
+                  label="FREE SLOTS"
+                  value={`${item.availableSlots}`}
+                  subtitle={`OUT OF ${item.totalSlots}`}
+                  size="sm"
+                  variant="emerald"
+                />
+                <DigitalMetricDisplay
+                  label="HOURLY RATE"
+                  value={`₹${item.price}`}
+                  subtitle="PER HOUR"
+                  size="sm"
+                  variant="dark"
+                />
               </View>
             </TouchableOpacity>
           ))

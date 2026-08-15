@@ -67,7 +67,7 @@ def search_parking(
 
 @router.get("/owner/my-locations", response_model=APIResponse[List[ParkingLocationResponse]])
 def get_owner_locations(
-    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN])),
     db: Session = Depends(get_db)
 ):
     """
@@ -101,7 +101,7 @@ def get_parking_by_id(
 @router.post("", response_model=APIResponse[ParkingLocationResponse], status_code=status.HTTP_201_CREATED)
 def create_parking_location(
     data: ParkingLocationCreate,
-    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN])),
     db: Session = Depends(get_db)
 ):
     """
@@ -122,7 +122,7 @@ def create_parking_location(
 def update_parking_location(
     parking_id: str,
     data: ParkingLocationUpdate,
-    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN])),
     db: Session = Depends(get_db)
 ):
     """
@@ -132,7 +132,7 @@ def update_parking_location(
     if not existing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parking location not found")
 
-    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and existing.owner_id != current_user.id:
+    if current_user.role != UserRole.ADMIN and existing.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this parking location")
 
     updated = parking_repository.update_location(db, parking_id, data)
@@ -144,7 +144,7 @@ def update_parking_location(
 @router.delete("/{parking_id}", response_model=APIResponse[dict])
 def delete_parking_location(
     parking_id: str,
-    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN])),
     db: Session = Depends(get_db)
 ):
     """
@@ -154,7 +154,7 @@ def delete_parking_location(
     if not existing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parking location not found")
 
-    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and existing.owner_id != current_user.id:
+    if current_user.role != UserRole.ADMIN and existing.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this parking location")
 
     parking_repository.delete(db, parking_id)
@@ -183,7 +183,7 @@ def get_parking_slots(
 def create_parking_slot(
     parking_id: str,
     data: ParkingSlotCreate,
-    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(require_roles([UserRole.PARKING_OWNER, UserRole.ADMIN])),
     db: Session = Depends(get_db)
 ):
     """
@@ -193,7 +193,7 @@ def create_parking_slot(
     if not location:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parking location not found")
 
-    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and location.owner_id != current_user.id:
+    if current_user.role != UserRole.ADMIN and location.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this parking location")
 
     slot = parking_repository.create_slot(db, parking_id, data)
@@ -219,7 +219,7 @@ def update_parking_slot(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parking location not found")
 
     is_owner = location.owner_id == current_user.id
-    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    is_admin = current_user.role == UserRole.ADMIN
     is_assigned_staff = (
         current_user.role in [UserRole.PARKING_STAFF, UserRole.STAFF]
         and parking_repository.is_staff_assigned(db, parking_id, current_user.id)

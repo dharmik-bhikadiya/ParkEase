@@ -15,6 +15,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.wallet import Wallet, WalletTransaction, TransactionType
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.qr import QrPass, QrType
+from app.models.notification import Notification
 
 __all__ = [
     "Base",
@@ -40,4 +41,5 @@ __all__ = [
     "PaymentStatus",
     "QrPass",
     "QrType",
+    "Notification",
 ]

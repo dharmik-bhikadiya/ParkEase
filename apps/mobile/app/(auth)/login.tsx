@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { mobileTheme } from '../../src/constants/theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { GoogleAuthButton } from '../../src/components/GoogleAuthButton';
+import { MobileLogo } from '../../src/components/MobileLogo';
 
 export default function MobileLoginScreen() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function MobileLoginScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
+        <MobileLogo size={56} align="center" />
         <Text style={styles.headerTitle}>Welcome Back</Text>
         <Text style={styles.headerSubtitle}>Sign in to your ParkEase account</Text>
 

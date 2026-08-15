@@ -9,7 +9,6 @@ export enum UserRole {
   PARKING_STAFF = 'PARKING_STAFF',
   STAFF = 'STAFF',
   ADMIN = 'ADMIN',
-  SUPER_ADMIN = 'SUPER_ADMIN',
 }
 
 export interface User {

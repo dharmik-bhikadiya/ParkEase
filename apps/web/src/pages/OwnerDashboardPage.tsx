@@ -14,6 +14,8 @@ import { Button } from '../components/ui/Button';
 import { parkingApi } from '../api/parkingApi';
 import { bookingApi } from '../api/booking';
 import { ParkingLocation, Booking } from '@parkease/shared';
+import { OwnerLayout } from '../components/owner/OwnerLayout';
+import { DigitalMetricDisplay } from '../components/ui/DigitalMetricDisplay';
 
 export const OwnerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,71 +47,91 @@ export const OwnerDashboardPage: React.FC = () => {
   const totalAvailable = locations.reduce((sum, l) => sum + (l.availableSlots || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#F7F9F5] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
-      {/* 1. HEADER & MAIN ACTIONS */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-200/60 pb-6">
-        <div>
-          <h1 className="text-3xl font-extrabold text-[#18342A] tracking-tight">
-            Parking Owner Control Dashboard
-          </h1>
-          <p className="text-sm text-gray-500 font-medium mt-1">
-            Manage your registered parking hubs, slot configurations, and live reservations.
-          </p>
+    <OwnerLayout
+      title="Parking Business Overview"
+      subtitle="Track live occupancy, reservations, and location status across your registered hubs."
+    >
+      <div className="space-y-8">
+        {/* 1. HEADER & MAIN ACTIONS */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-200/60 pb-6">
+          <div>
+            <h2 className="text-xl font-extrabold text-[#18342A] tracking-tight">
+              Quick Actions & Control
+            </h2>
+            <p className="text-xs text-gray-500 font-medium mt-1">
+              Add locations, adjust slot layouts, and review customer bookings.
+            </p>
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={() => navigate('/owner/parking/new')}
+            className="bg-[#176B4D] hover:bg-[#12543c] text-white font-extrabold px-5 py-3 rounded-2xl flex items-center gap-2 shadow-md"
+          >
+            <Plus className="w-5 h-5" /> Add New Parking
+          </Button>
         </div>
 
-        <Button
-          variant="primary"
-          onClick={() => navigate('/owner/parking/new')}
-          className="bg-[#176B4D] hover:bg-[#12543c] text-white font-extrabold px-5 py-3 rounded-2xl flex items-center gap-2 shadow-md"
-        >
-          <Plus className="w-5 h-5" /> Add New Parking
-        </Button>
-      </div>
-
-      {/* 2. REAL METRIC SUMMARY CARDS */}
+      {/* 2. REAL METRIC SUMMARY CARDS WITH DIGITAL CLOCK TYPOGRAPHY */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <Card className="p-5 bg-white border border-[#E8F6EC] shadow-sm rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Registered Hubs</span>
+            <DigitalMetricDisplay
+              label="REGISTERED HUBS"
+              value={totalLocations}
+              subtitle="Active & Pending Parking Lots"
+              variant="emerald"
+              size="lg"
+            />
             <div className="p-2 bg-[#E8F6EC] rounded-xl text-[#176B4D]">
               <Building2 className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-[#18342A]">{totalLocations}</div>
-          <p className="text-[11px] text-gray-400 font-medium">Active & Pending Parking Lots</p>
         </Card>
 
         <Card className="p-5 bg-white border border-[#E8F6EC] shadow-sm rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total System Slots</span>
+            <DigitalMetricDisplay
+              label="SYSTEM SLOTS"
+              value={totalSlots}
+              subtitle="Configured Physical Slots"
+              variant="dark"
+              size="lg"
+            />
             <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
               <Layers className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-[#18342A]">{totalSlots}</div>
-          <p className="text-[11px] text-gray-400 font-medium">Configured Physical Slots</p>
         </Card>
 
         <Card className="p-5 bg-white border border-[#E8F6EC] shadow-sm rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Available Slots</span>
+            <DigitalMetricDisplay
+              label="AVAILABLE SLOTS"
+              value={totalAvailable}
+              subtitle="Ready for Vehicle Entry"
+              variant="emerald"
+              size="lg"
+            />
             <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
               <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-[#176B4D]">{totalAvailable}</div>
-          <p className="text-[11px] text-emerald-600 font-medium">Ready for Vehicle Entry</p>
         </Card>
 
         <Card className="p-5 bg-white border border-[#E8F6EC] shadow-sm rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Live Reservations</span>
+            <DigitalMetricDisplay
+              label="LIVE RESERVATIONS"
+              value={ownerBookings.length}
+              subtitle="Customer Parking Bookings"
+              variant="dark"
+              size="lg"
+            />
             <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
               <Calendar className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-[#18342A]">{ownerBookings.length}</div>
-          <p className="text-[11px] text-gray-500 font-medium">Customer Parking Bookings</p>
         </Card>
       </div>
 
@@ -251,6 +273,7 @@ export const OwnerDashboardPage: React.FC = () => {
           </Card>
         </div>
       )}
-    </div>
+      </div>
+    </OwnerLayout>
   );
 };

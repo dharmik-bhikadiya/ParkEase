@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, QrCode, ArrowRightLeft, CheckCircle2, AlertCircle, RefreshCw, Car } from 'lucide-react';
+import { QrCode, ArrowRightLeft, CheckCircle2, AlertCircle, RefreshCw, Car } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { qrApi } from '../api/qrApi';
+import { StaffLayout } from '../components/staff/StaffLayout';
 
 export const StaffGateScanPage: React.FC = () => {
   const [scanType, setScanType] = useState<'ENTRY' | 'EXIT'>('ENTRY');
@@ -38,16 +39,11 @@ export const StaffGateScanPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9F5] py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="border-b border-gray-200 pb-6">
-        <h1 className="text-3xl font-extrabold text-[#18342A] flex items-center gap-3">
-          <ShieldCheck className="w-8 h-8 text-[#176B4D]" /> Barrier Gate Scanner Hub
-        </h1>
-        <p className="text-sm text-gray-500 font-medium mt-1">
-          Verify driver QR passes, authorize gate entry, and process parking session exits.
-        </p>
-      </div>
+    <StaffLayout
+      title="Barrier Gate Scanner Hub"
+      subtitle="Verify driver QR passes, authorize gate entry, and process parking session exits."
+    >
+      <div className="space-y-6 max-w-4xl">
 
       {/* Control Card */}
       <Card className="p-6 bg-white border border-[#E8F6EC] shadow-sm rounded-3xl space-y-6">
@@ -158,6 +154,7 @@ export const StaffGateScanPage: React.FC = () => {
           </motion.div>
         )}
       </Card>
-    </div>
+      </div>
+    </StaffLayout>
   );
 };

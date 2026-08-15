@@ -22,8 +22,10 @@ export const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  const isOwner = user && [UserRole.PARKING_OWNER, UserRole.PARKING_STAFF, UserRole.STAFF, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role as any);
-  const isAdmin = user && [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role as any);
+  const isAdmin = user && user.role === UserRole.ADMIN;
+  const isOwner = user && user.role === UserRole.PARKING_OWNER;
+  const isStaff = user && (user.role === UserRole.PARKING_STAFF || user.role === UserRole.STAFF);
+  const isDriver = !user || user.role === UserRole.USER || user.role === UserRole.DRIVER;
 
   return (
     <header className="sticky top-0 z-50 bg-[#F7F9F5]/90 backdrop-blur-md border-b border-[#E8F6EC] px-6 py-3">
@@ -34,55 +36,99 @@ export const Navbar: React.FC = () => {
           <span className="text-2xl font-black text-[#18342A] tracking-tight">
             Park<span className="text-[#176B4D]">Ease</span>
           </span>
+          {isAdmin && (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase">
+              <ShieldCheck className="w-3 h-3 text-emerald-700" /> ADMIN
+            </span>
+          )}
         </Link>
 
-        {/* Navigation Links */}
+        {/* Navigation Links - Role Segregated */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-[#18342A]">
-          <Link to="/find-parking" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
-            <Search className="w-4 h-4 text-[#176B4D]" /> Find Parking
-          </Link>
-
-          {user && (
+          {/* ADMIN NAVIGATION */}
+          {isAdmin && (
             <>
-              <Link to="/bookings" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
-                <Calendar className="w-4 h-4 text-[#176B4D]" /> My Bookings
+              <Link to="/" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                Home
               </Link>
-              <Link to="/wallet" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
-                <WalletIcon className="w-4 h-4 text-[#176B4D]" /> Wallet
-                {walletBalance !== null && (
-                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    ₹{walletBalance.toFixed(0)}
-                  </span>
-                )}
+              <Link to="/admin" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Dashboard
+              </Link>
+              <Link to="/admin/users" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                Users
+              </Link>
+              <Link to="/admin/parking" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                Parking
+              </Link>
+              <Link to="/admin/bookings" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                Bookings
+              </Link>
+              <Link to="/admin/payments" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                Payments
+              </Link>
+              <Link to="/admin/reports" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                Reports
               </Link>
             </>
           )}
 
+          {/* OWNER NAVIGATION */}
           {isOwner && (
             <>
-              <Link to="/owner/dashboard" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+              <Link to="/owner" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
                 <Building2 className="w-4 h-4 text-[#176B4D]" /> Owner Hub
               </Link>
               <Link to="/staff/gate-scan" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
                 <QrCode className="w-4 h-4 text-[#176B4D]" /> Gate Scanner
               </Link>
+              <Link to="/owner/profile" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                <UserIcon className="w-4 h-4 text-[#176B4D]" /> Profile
+              </Link>
             </>
           )}
 
-          {isAdmin && (
-            <Link to="/admin/parking" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" /> Admin Approvals
-            </Link>
-          )}
-
-          {user && (
+          {/* STAFF NAVIGATION */}
+          {isStaff && (
             <>
-              <Link to="/vehicles" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
-                <Car className="w-4 h-4 text-[#176B4D]" /> Vehicles
+              <Link to="/staff" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                <ShieldCheck className="w-4 h-4 text-[#176B4D]" /> Staff Portal
               </Link>
-              <Link to="/profile" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+              <Link to="/staff/gate-scan" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                <QrCode className="w-4 h-4 text-[#176B4D]" /> Gate Scanner
+              </Link>
+              <Link to="/staff/profile" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
                 <UserIcon className="w-4 h-4 text-[#176B4D]" /> Profile
               </Link>
+            </>
+          )}
+
+          {/* DRIVER / CUSTOMER NAVIGATION */}
+          {isDriver && (
+            <>
+              <Link to="/find-parking" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                <Search className="w-4 h-4 text-[#176B4D]" /> Find Parking
+              </Link>
+              {user && (
+                <>
+                  <Link to="/bookings" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                    <Calendar className="w-4 h-4 text-[#176B4D]" /> My Bookings
+                  </Link>
+                  <Link to="/wallet" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                    <WalletIcon className="w-4 h-4 text-[#176B4D]" /> Wallet
+                    {walletBalance !== null && (
+                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        ₹{walletBalance.toFixed(0)}
+                      </span>
+                    )}
+                  </Link>
+                  <Link to="/vehicles" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                    <Car className="w-4 h-4 text-[#176B4D]" /> Vehicles
+                  </Link>
+                  <Link to="/profile" className="relative py-1 flex items-center gap-1.5 hover:text-[#176B4D] transition-colors">
+                    <UserIcon className="w-4 h-4 text-[#176B4D]" /> Profile
+                  </Link>
+                </>
+              )}
             </>
           )}
         </nav>

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, ArrowRight, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 import { apiClient } from '../api/client';
+import { ParkEaseAnimatedLogo } from '../components/brand/ParkEaseAnimatedLogo';
 
 export const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -58,6 +59,11 @@ export const ResetPasswordPage: React.FC = () => {
         className="w-full max-w-md bg-white rounded-3xl p-8 border border-[#E8F6EC] shadow-xl shadow-[#176B4D]/5"
       >
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <Link to="/" className="inline-block transition-transform hover:scale-105" title="ParkEase Home">
+              <ParkEaseAnimatedLogo size={54} variant="symbol" />
+            </Link>
+          </div>
           <h1 className="text-3xl font-bold text-[#18342A] mb-2 tracking-tight">Reset Password</h1>
           <p className="text-sm text-gray-600">Enter your new strong password below</p>
         </div>

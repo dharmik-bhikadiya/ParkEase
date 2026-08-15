@@ -5,6 +5,7 @@ import { User, Mail, Phone, Lock, ArrowRight, AlertCircle, Shield } from 'lucide
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '@parkease/shared';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { ParkEaseAnimatedLogo } from '../components/brand/ParkEaseAnimatedLogo';
 
 export const RegisterPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -61,6 +62,11 @@ export const RegisterPage: React.FC = () => {
         className="w-full max-w-lg bg-white rounded-3xl p-8 border border-[#E8F6EC] shadow-xl shadow-[#176B4D]/5"
       >
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <Link to="/" className="inline-block transition-transform hover:scale-105" title="ParkEase Home">
+              <ParkEaseAnimatedLogo size={54} variant="symbol" />
+            </Link>
+          </div>
           <h1 className="text-3xl font-bold text-[#18342A] mb-2 tracking-tight">Create ParkEase Account</h1>
           <p className="text-sm text-gray-600">Join ParkEase to reserve slots and manage vehicles effortlessly</p>
         </div>

@@ -25,7 +25,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
-    const hasRole = allowedRoles.includes(user.role as UserRole) || user.role === UserRole.SUPER_ADMIN;
+    const hasRole = allowedRoles.includes(user.role as UserRole);
     if (!hasRole) {
       return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">

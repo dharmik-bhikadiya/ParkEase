@@ -72,6 +72,6 @@ export async function mobileApiFetch(endpoint: string, options: RequestInit = {}
       throw err;
     }
     // Clean user-friendly message for network or connection failures
-    throw new Error('Unable to connect to the server. Please check your connection and try again.');
+    throw new Error('Unable to connect to ParkEase right now. Please check your connection and try again.');
   }
 }

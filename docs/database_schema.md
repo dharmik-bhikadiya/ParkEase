@@ -29,7 +29,7 @@ erDiagram
 - `hashed_password` (VARCHAR(255))
 - `full_name` (VARCHAR(150))
 - `phone_number` (VARCHAR(20))
-- `role` (ENUM: `DRIVER`, `PARKING_OWNER`, `STAFF`, `ADMIN`, `SUPER_ADMIN`)
+- `role` (ENUM: `DRIVER`, `PARKING_OWNER`, `STAFF`, `ADMIN`)
 - `is_active` (BOOLEAN)
 - `created_at`, `updated_at` (TIMESTAMP WITH TIMEZONE)
 

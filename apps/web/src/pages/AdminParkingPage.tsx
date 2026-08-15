@@ -1,45 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ShieldCheck,
   CheckCircle2,
   Ban,
-  UserPlus,
-  Clock,
   MapPin,
+  RefreshCw,
 } from 'lucide-react';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { parkingApi } from '../api/parkingApi';
+import { adminApi } from '../api/adminApi';
 import { ParkingLocation } from '@parkease/shared';
+import { AdminLayout } from '../components/admin/AdminLayout';
 
 export const AdminParkingPage: React.FC = () => {
-  const [pendingLocations, setPendingLocations] = useState<ParkingLocation[]>([]);
+  const [activeTab, setActiveTab] = useState<'pending' | 'all' | 'active' | 'suspended'>('pending');
+  const [locations, setLocations] = useState<ParkingLocation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [staffModalLocation, setStaffModalLocation] = useState<ParkingLocation | null>(null);
-  const [staffEmail, setStaffEmail] = useState<string>('');
-  const [staffSuccessMsg, setStaffSuccessMsg] = useState<string>('');
 
-  const fetchPending = async () => {
+  const fetchParkingData = async () => {
     setLoading(true);
     try {
-      const res = await parkingApi.getPendingParkingAdmin();
-      setPendingLocations(res);
+      if (activeTab === 'pending') {
+        const res = await adminApi.getPendingParking();
+        setLocations(res);
+      } else {
+        const res = await adminApi.getAllParking();
+        if (activeTab === 'active') {
+          setLocations(res.filter((l) => l.status === 'ACTIVE'));
+        } else if (activeTab === 'suspended') {
+          setLocations(res.filter((l) => l.status === 'SUSPENDED'));
+        } else {
+          setLocations(res);
+        }
+      }
     } catch {
-      // Handled in API client
+      // Handled
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPending();
-  }, []);
+    fetchParkingData();
+  }, [activeTab]);
 
   const handleApprove = async (id: string) => {
     try {
-      await parkingApi.approveParkingAdmin(id);
-      fetchPending();
+      await adminApi.approveParking(id);
+      fetchParkingData();
     } catch {
       // Handled
     }
@@ -47,159 +53,126 @@ export const AdminParkingPage: React.FC = () => {
 
   const handleSuspend = async (id: string) => {
     try {
-      await parkingApi.suspendParkingAdmin(id);
-      fetchPending();
+      await adminApi.suspendParking(id);
+      fetchParkingData();
     } catch {
       // Handled
     }
   };
 
-  const handleAssignStaff = async () => {
-    if (!staffModalLocation || !staffEmail) return;
-    try {
-      await parkingApi.assignStaffAdmin(staffModalLocation.id, staffEmail);
-      setStaffSuccessMsg(`Staff member ${staffEmail} assigned successfully!`);
-      setTimeout(() => {
-        setStaffSuccessMsg('');
-        setStaffModalLocation(null);
-        setStaffEmail('');
-      }, 1500);
-    } catch {
-      setStaffSuccessMsg('Assigned staff member.');
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#F7F9F5] py-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-8">
-      {/* HEADER */}
-      <div className="border-b border-gray-200/60 pb-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] text-xs font-bold mb-2">
-          <ShieldCheck className="w-3.5 h-3.5" /> Admin System Verification Portal
+    <AdminLayout
+      title="Admin Parking Management & Approvals"
+      subtitle="Review owner submissions, approve new locations, and manage platform parking sites."
+    >
+      {/* Tabs Bar */}
+      <div className="bg-white rounded-2xl p-4 border border-[#E8F6EC] shadow-xs mb-6 flex items-center justify-between gap-4 overflow-x-auto">
+        <div className="flex items-center gap-2">
+          {[
+            { key: 'pending', label: 'Pending Approval' },
+            { key: 'all', label: 'All Locations' },
+            { key: 'active', label: 'Active' },
+            { key: 'suspended', label: 'Suspended' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'bg-[#176B4D] text-white shadow-xs'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-        <h1 className="text-3xl font-extrabold text-[#18342A] tracking-tight">
-          Admin Parking Approvals & Staff Assignment
-        </h1>
-        <p className="text-xs text-gray-500 font-medium mt-0.5">
-          Review owner-submitted parking locations before activating them on the public discovery map.
-        </p>
+
+        <button
+          onClick={fetchParkingData}
+          disabled={loading}
+          className="p-2 text-gray-400 hover:text-[#176B4D] hover:bg-gray-100 rounded-xl transition-all"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
-      {/* PENDING APPROVAL QUEUE */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-[#18342A] flex items-center gap-2">
-          <Clock className="w-5 h-5 text-amber-600" /> Pending Owner Submissions ({pendingLocations.length})
-        </h2>
-
-        {loading ? (
-          <div className="py-12 text-center">
-            <div className="w-8 h-8 border-3 border-[#176B4D] border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="mt-2 text-xs text-gray-500">Fetching pending queue...</p>
-          </div>
-        ) : pendingLocations.length === 0 ? (
-          <Card className="p-8 text-center space-y-2 bg-white rounded-3xl border border-dashed border-gray-300">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-            <h3 className="text-base font-bold text-[#18342A]">No Pending Approvals</h3>
-            <p className="text-xs text-gray-500">All submitted parking lots have been verified or processed.</p>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {pendingLocations.map((loc) => (
-              <Card key={loc.id} className="p-5 bg-white border border-amber-200 shadow-sm rounded-3xl space-y-4">
-                <div className="flex items-start justify-between gap-2 border-b border-gray-100 pb-3">
-                  <div>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-50 text-amber-800 uppercase tracking-wider">
-                      {loc.parkingType}
-                    </span>
-                    <h3 className="font-extrabold text-lg text-[#18342A] mt-1">{loc.name}</h3>
-                    <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#176B4D]" /> {loc.address}, {loc.city}
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-extrabold px-2.5 py-1 rounded bg-amber-100 text-amber-900 border border-amber-300 uppercase">
-                    {loc.status}
+      {/* Locations Display */}
+      {loading ? (
+        <div className="py-12 text-center">
+          <RefreshCw className="w-6 h-6 animate-spin text-[#176B4D] mx-auto mb-2" />
+          <p className="text-xs text-gray-500 font-medium">Fetching parking locations...</p>
+        </div>
+      ) : locations.length === 0 ? (
+        <div className="p-8 text-center bg-white rounded-3xl border border-dashed border-gray-300">
+          <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+          <h3 className="text-base font-bold text-[#18342A]">No Parking Locations Found</h3>
+          <p className="text-xs text-gray-500 mt-1">There are no locations matching the selected status tab.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {locations.map((loc) => (
+            <div key={loc.id} className="p-5 bg-white border border-[#E8F6EC] shadow-xs rounded-3xl space-y-4">
+              <div className="flex items-start justify-between gap-2 border-b border-gray-100 pb-3">
+                <div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-gray-100 text-gray-700 uppercase tracking-wider">
+                    {loc.parkingType}
                   </span>
+                  <h3 className="font-extrabold text-lg text-[#18342A] mt-1">{loc.name}</h3>
+                  <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#176B4D]" /> {loc.address}, {loc.city}
+                  </p>
                 </div>
+                <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded border uppercase ${
+                  loc.status === 'ACTIVE'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : loc.status === 'PENDING_APPROVAL'
+                    ? 'bg-amber-100 text-amber-800 border-amber-300'
+                    : 'bg-rose-100 text-rose-800 border-rose-300'
+                }`}>
+                  {loc.status}
+                </span>
+              </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs p-3 bg-[#F7F9F5] rounded-xl font-medium">
-                  <div>
-                    <span className="text-gray-400 block font-bold text-[10px]">Slots</span>
-                    <span className="font-extrabold text-[#18342A]">{loc.totalSlots} Total</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block font-bold text-[10px]">Car Rate</span>
-                    <span className="font-extrabold text-[#176B4D]">₹{loc.pricing?.carHourlyPrice || 20}/hr</span>
-                  </div>
+              <div className="grid grid-cols-2 gap-2 text-xs p-3 bg-[#F7F9F5] rounded-xl font-medium">
+                <div>
+                  <span className="text-gray-400 block font-bold text-[10px]">Slots</span>
+                  <span className="font-extrabold text-[#18342A]">{loc.totalSlots} Total</span>
                 </div>
+                <div>
+                  <span className="text-gray-400 block font-bold text-[10px]">Hourly Rate</span>
+                  <span className="font-extrabold text-[#176B4D]">₹{loc.pricing?.carHourlyPrice || 20}/hr</span>
+                </div>
+              </div>
 
-                {/* ACTION CONTROLS */}
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              {/* ACTION CONTROLS */}
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                {loc.status !== 'ACTIVE' && (
                   <Button
                     variant="primary"
                     size="sm"
                     onClick={() => handleApprove(loc.id)}
                     className="flex-1 bg-[#176B4D] hover:bg-[#12543c] text-white text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1"
                   >
-                    <CheckCircle2 className="w-4 h-4" /> Approve & Activate
+                    <CheckCircle2 className="w-4 h-4" /> Approve
                   </Button>
+                )}
 
+                {loc.status !== 'SUSPENDED' && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleSuspend(loc.id)}
-                    className="text-rose-700 border-rose-200 hover:bg-rose-50 text-xs font-bold py-2 rounded-xl"
+                    className="text-rose-700 border-rose-200 hover:bg-rose-50 text-xs font-bold py-2 rounded-xl flex-1 flex items-center justify-center gap-1"
                   >
-                    <Ban className="w-4 h-4 mr-1" /> Suspend
+                    <Ban className="w-4 h-4" /> Suspend
                   </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setStaffModalLocation(loc)}
-                    className="text-[#176B4D] border-[#176B4D] text-xs font-bold py-2 rounded-xl"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* STAFF ASSIGNMENT MODAL */}
-      {staffModalLocation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-extrabold text-[#18342A]">
-              Assign Staff Member to {staffModalLocation.name}
-            </h3>
-            <p className="text-xs text-gray-500">
-              Staff members will be granted operational slot status editing rights for this location.
-            </p>
-
-            <Input
-              value={staffEmail}
-              onChange={(e) => setStaffEmail(e.target.value)}
-              placeholder="Enter staff member email or user ID..."
-            />
-
-            {staffSuccessMsg && (
-              <div className="p-3 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl">
-                {staffSuccessMsg}
+                )}
               </div>
-            )}
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
-              <Button variant="outline" onClick={() => setStaffModalLocation(null)}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={handleAssignStaff} className="bg-[#176B4D] text-white">
-                Assign Staff
-              </Button>
             </div>
-          </div>
+          ))}
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 };

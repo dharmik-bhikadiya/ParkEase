@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter } from 'expo-router';
 import { mobileTheme } from '../src/constants/theme';
 import { useAuth } from '../src/context/AuthContext';
+import { MobileLogo } from '../src/components/MobileLogo';
+
+import { DigitalMetricDisplay } from '../src/components/DigitalMetricDisplay';
 
 export default function MobileHomeScreen() {
   const router = useRouter();
@@ -11,22 +14,51 @@ export default function MobileHomeScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
+        <MobileLogo size={52} align="flex-start" />
+
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>Phase 2A • Auth Active</Text>
+          <Text style={styles.badgeText}>Phase 3 • Digital Engine Active</Text>
         </View>
 
-        <Text style={styles.title}>ParkEase Mobile</Text>
         <Text style={styles.subtitle}>
-          Smart parking reservation, profile security, and vehicle management platform.
+          Smart parking reservation, digital clock typography metrics, and barrier gate pass platform.
         </Text>
+
+        {/* Digital Typography Quick Metrics Row */}
+        <View style={styles.metricsRow}>
+          <DigitalMetricDisplay label="AVAILABLE SLOTS" value="142" size="md" />
+          <DigitalMetricDisplay label="PARKING HUBS" value="24" size="md" />
+        </View>
 
         {user ? (
           <View style={styles.userBox}>
             <Text style={styles.welcomeText}>Welcome back, {user.fullName}!</Text>
-            <Text style={styles.userRole}>Role: {user.role}</Text>
+            <Text style={styles.userRole}>ROLE: {user.role.replace('_', ' ')}</Text>
             <Text style={styles.userEmail}>{user.email}</Text>
 
             <View style={styles.buttonGroup}>
+              {user.role === 'PARKING_OWNER' && (
+                <View style={styles.roleBanner}>
+                  <Text style={styles.roleBannerText}>
+                    🏢 PARKING OWNER HUB
+                  </Text>
+                  <Text style={styles.roleSubtext}>
+                    Access location & revenue management on the ParkEase Web Platform.
+                  </Text>
+                </View>
+              )}
+
+              {(user.role === 'PARKING_STAFF' || user.role === 'STAFF') && (
+                <View style={styles.roleBanner}>
+                  <Text style={styles.roleBannerText}>
+                    🛡️ PARKING STAFF PORTAL
+                  </Text>
+                  <Text style={styles.roleSubtext}>
+                    Operational gate scanner and slot visualizer ready for active duty.
+                  </Text>
+                </View>
+              )}
+
               <TouchableOpacity
                 style={styles.primaryButton}
                 onPress={() => router.push('/(app)/profile')}
@@ -177,5 +209,34 @@ const styles = StyleSheet.create({
     color: '#D32F2F',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  roleBanner: {
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: mobileTheme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#E8F6EC',
+    marginBottom: 4,
+  },
+  roleBannerText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: mobileTheme.colors.darkGreen,
+    marginBottom: 2,
+  },
+  roleSubtext: {
+    fontSize: 11,
+    color: '#666666',
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    padding: 16,
+    borderRadius: mobileTheme.borderRadius.md,
+    marginBottom: mobileTheme.spacing.md,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
   },
 });

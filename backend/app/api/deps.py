@@ -46,10 +46,6 @@ def get_current_active_user(
 
 def require_roles(allowed_roles: List[UserRole]) -> Callable:
     def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
-        # SUPER_ADMIN always has full platform access
-        if current_user.role == UserRole.SUPER_ADMIN:
-            return current_user
-            
         # Normalize role checks (handle DRIVER <-> USER and STAFF <-> PARKING_STAFF aliases)
         effective_role = current_user.role
         role_matches = False

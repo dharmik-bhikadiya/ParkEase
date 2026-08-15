@@ -28,11 +28,17 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
 
     try {
-      await loginWithGoogle(response.credential);
+      const gUser = await loginWithGoogle(response.credential);
       if (onSuccess) {
         onSuccess();
+      } else if (gUser.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else if (gUser.role === 'PARKING_OWNER') {
+        navigate('/owner/dashboard', { replace: true });
+      } else if (gUser.role === 'PARKING_STAFF' || gUser.role === 'STAFF') {
+        navigate('/staff/gate-scan', { replace: true });
       } else {
-        navigate('/');
+        navigate('/find-parking', { replace: true });
       }
     } catch (err: any) {
       const errMsg = err?.message || 'Google sign-in failed. Please try again.';
@@ -69,11 +75,17 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       } else {
         // Development mode fallback token when VITE_GOOGLE_CLIENT_ID is omitted
         const devMockToken = `mock_google_token:google_user_${Date.now()}@parkease.com:sub_google_${Math.floor(Math.random() * 100000)}:Google-User`;
-        await loginWithGoogle(devMockToken);
+        const gUser = await loginWithGoogle(devMockToken);
         if (onSuccess) {
           onSuccess();
+        } else if (gUser.role === 'ADMIN') {
+          navigate('/admin', { replace: true });
+        } else if (gUser.role === 'PARKING_OWNER') {
+          navigate('/owner/dashboard', { replace: true });
+        } else if (gUser.role === 'PARKING_STAFF' || gUser.role === 'STAFF') {
+          navigate('/staff/gate-scan', { replace: true });
         } else {
-          navigate('/');
+          navigate('/find-parking', { replace: true });
         }
       }
     } catch (err: any) {

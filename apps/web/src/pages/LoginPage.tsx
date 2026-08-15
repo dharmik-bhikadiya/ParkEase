@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { ParkEaseAnimatedLogo } from '../components/brand/ParkEaseAnimatedLogo';
 
 export const LoginPage: React.FC = () => {
   const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -14,7 +15,6 @@ export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from?.pathname || '/profile';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +22,19 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await login({ emailOrPhone, password });
-      navigate(from, { replace: true });
+      const loggedInUser = await login({ emailOrPhone, password });
+      const from = (location.state as any)?.from?.pathname;
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (loggedInUser.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else if (loggedInUser.role === 'PARKING_OWNER') {
+        navigate('/owner/dashboard', { replace: true });
+      } else if (loggedInUser.role === 'PARKING_STAFF' || loggedInUser.role === 'STAFF') {
+        navigate('/staff/gate-scan', { replace: true });
+      } else {
+        navigate('/find-parking', { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
@@ -40,6 +51,11 @@ export const LoginPage: React.FC = () => {
         className="w-full max-w-md bg-white rounded-3xl p-8 border border-[#E8F6EC] shadow-xl shadow-[#176B4D]/5"
       >
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <Link to="/" className="inline-block transition-transform hover:scale-105" title="ParkEase Home">
+              <ParkEaseAnimatedLogo size={54} variant="symbol" />
+            </Link>
+          </div>
           <h1 className="text-3xl font-bold text-[#18342A] mb-2 tracking-tight">Welcome Back</h1>
           <p className="text-sm text-gray-600">Sign in to manage your bookings and vehicles</p>
         </div>

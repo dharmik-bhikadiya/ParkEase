@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { mobileBookingApi } from '../../src/api/booking';
 import { mobileQrApi, MobileQrPassItem } from '../../src/api/qr';
 import { Booking, BookingStatus } from '@parkease/shared';
+import { DigitalMetricDisplay } from '../../src/components/DigitalMetricDisplay';
 
 export default function MyBookingsScreen() {
   const router = useRouter();
@@ -127,16 +128,24 @@ export default function MyBookingsScreen() {
 
               <View style={styles.grid}>
                 <View style={styles.infoBox}>
-                  <Text style={styles.infoLabel}>Slot</Text>
-                  <Text style={styles.infoValue}>{b.slotNumber || 'A-101'}</Text>
+                  <DigitalMetricDisplay
+                    label="SLOT"
+                    value={b.slotNumber || 'P-01'}
+                    size="sm"
+                    variant="emerald"
+                  />
                 </View>
                 <View style={styles.infoBox}>
                   <Text style={styles.infoLabel}>Vehicle</Text>
                   <Text style={styles.infoValue}>{b.vehicleNumber}</Text>
                 </View>
                 <View style={styles.infoBox}>
-                  <Text style={styles.infoLabel}>Duration</Text>
-                  <Text style={styles.infoValue}>{b.totalHours} hrs</Text>
+                  <DigitalMetricDisplay
+                    label="DURATION"
+                    value={`${b.totalHours}h`}
+                    size="sm"
+                    variant="dark"
+                  />
                 </View>
                 <View style={styles.infoBox}>
                   <Text style={styles.infoLabel}>Total</Text>

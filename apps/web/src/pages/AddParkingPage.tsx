@@ -11,7 +11,6 @@ import {
   Car,
   Layers,
   Image as ImageIcon,
-  Sparkles,
   Send,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -19,6 +18,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { parkingApi } from '../api/parkingApi';
 import { ParkingType, CreateParkingRequest } from '@parkease/shared';
+import { OwnerLayout } from '../components/owner/OwnerLayout';
 
 const STEPS = [
   { id: 1, title: 'Basic Info', icon: Building2 },
@@ -95,35 +95,20 @@ export const AddParkingPage: React.FC = () => {
     setErrorMsg('');
     try {
       await parkingApi.createParking(formData);
-      navigate('/owner/dashboard');
+      navigate('/owner/locations');
     } catch (err: any) {
-      navigate('/owner/dashboard');
+      navigate('/owner/locations');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9F5] py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
-      {/* Back Button */}
-      <button
-        onClick={() => navigate('/owner/dashboard')}
-        className="inline-flex items-center gap-2 text-sm font-bold text-[#176B4D] hover:underline cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" /> Cancel & Return to Dashboard
-      </button>
-
-      {/* HEADER & STEPPER PROGRESS BAR */}
-      <div className="space-y-4">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] text-xs font-bold mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> 8-Step Owner Setup Wizard
-          </div>
-          <h1 className="text-3xl font-extrabold text-[#18342A] tracking-tight">Register Parking Location</h1>
-          <p className="text-xs text-gray-500 font-medium">
-            Submitted parking lots will be marked as <span className="font-bold text-amber-600">PENDING_APPROVAL</span> until verified by Admin.
-          </p>
-        </div>
+    <OwnerLayout
+      title="Register Parking Location"
+      subtitle="Submitted parking lots will be marked as PENDING_APPROVAL until verified by Admin."
+    >
+      <div className="space-y-6 max-w-4xl">
 
         {/* Stepper Steps Header */}
         <div className="flex items-center justify-between overflow-x-auto pb-2 gap-2 border-b border-gray-200">
@@ -531,6 +516,6 @@ export const AddParkingPage: React.FC = () => {
           )}
         </div>
       </Card>
-    </div>
+    </OwnerLayout>
   );
 };

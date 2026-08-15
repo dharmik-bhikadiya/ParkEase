@@ -14,6 +14,8 @@ import { useRouter } from 'expo-router';
 import { mobileWalletApi } from '../../src/api/wallet';
 import { Wallet, WalletTransaction } from '@parkease/shared';
 
+import { DigitalMetricDisplay } from '../../src/components/DigitalMetricDisplay';
+
 export default function WalletScreen() {
   const router = useRouter();
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -83,14 +85,15 @@ export default function WalletScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Balance Hero Card */}
+        {/* Balance Hero Card with Digital Clock Typography */}
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceTag}>DIGITAL WALLET</Text>
-          <Text style={styles.balanceLabel}>Available Balance</Text>
-          <Text style={styles.balanceValue}>
-            ₹{wallet ? wallet.balance.toFixed(2) : '0.00'}{' '}
-            <Text style={styles.currencyText}>{wallet?.currency || 'INR'}</Text>
-          </Text>
+          <DigitalMetricDisplay
+            label="AVAILABLE WALLET BALANCE"
+            value={`₹${wallet ? wallet.balance.toFixed(2) : '0.00'}`}
+            subtitle={`CURRENCY: ${wallet?.currency || 'INR'} • SECURE ACCOUNT`}
+            variant="emerald"
+            size="giant"
+          />
         </View>
 
         {/* Top-Up Section */}

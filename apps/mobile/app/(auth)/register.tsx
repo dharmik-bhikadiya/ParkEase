@@ -5,6 +5,7 @@ import { mobileTheme } from '../../src/constants/theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { UserRole } from '@parkease/shared';
 import { GoogleAuthButton } from '../../src/components/GoogleAuthButton';
+import { MobileLogo } from '../../src/components/MobileLogo';
 
 export default function MobileRegisterScreen() {
   const router = useRouter();
@@ -53,6 +54,7 @@ export default function MobileRegisterScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
+        <MobileLogo size={56} align="center" />
         <Text style={styles.headerTitle}>Create Account</Text>
         <Text style={styles.headerSubtitle}>Join ParkEase for seamless parking reservations</Text>
 

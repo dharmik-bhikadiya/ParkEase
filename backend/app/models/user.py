@@ -11,7 +11,6 @@ class UserRole(str, enum.Enum):
     PARKING_STAFF = "PARKING_STAFF"
     STAFF = "STAFF"    # Legacy/Alias for staff
     ADMIN = "ADMIN"
-    SUPER_ADMIN = "SUPER_ADMIN"
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
@@ -32,3 +31,4 @@ class User(Base, TimestampMixin):
     bookings = relationship("Booking", back_populates="user", cascade="all, delete-orphan")
     vehicles = relationship("UserVehicle", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
