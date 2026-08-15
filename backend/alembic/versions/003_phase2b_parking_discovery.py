@@ -1,15 +1,14 @@
 """Phase 2B Parking Discovery, Owner, Pricing, Slots & Staff Assignment migration
 
-Revision ID: 003_phase2b_parking_discovery_owner_slots
+Revision ID: 003_phase2b_parking_discovery
 Revises: 002_add_google_auth_fields
 Create Date: 2026-08-14 12:00:00.000000
 
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import sqlite
 
-revision = '003_phase2b_parking_discovery_owner_slots'
+revision = '003_phase2b_parking_discovery'
 down_revision = '002_add_google_auth_fields'
 branch_labels = None
 depends_on = None
