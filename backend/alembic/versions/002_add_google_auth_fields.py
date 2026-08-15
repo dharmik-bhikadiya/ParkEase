@@ -17,10 +17,12 @@ def upgrade() -> None:
     op.add_column('users', sa.Column('google_id', sa.String(length=255), nullable=True))
     op.add_column('users', sa.Column('auth_provider', sa.String(length=50), server_default='email', nullable=False))
     op.create_index(op.f('ix_users_google_id'), 'users', ['google_id'], unique=True)
-    op.alter_column('users', 'hashed_password', existing_type=sa.String(length=255), nullable=True)
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.alter_column('hashed_password', existing_type=sa.String(length=255), nullable=True)
 
 def downgrade() -> None:
-    op.alter_column('users', 'hashed_password', existing_type=sa.String(length=255), nullable=False)
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.alter_column('hashed_password', existing_type=sa.String(length=255), nullable=False)
     op.drop_index(op.f('ix_users_google_id'), table_name='users')
     op.drop_column('users', 'auth_provider')
     op.drop_column('users', 'google_id')

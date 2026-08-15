@@ -37,6 +37,16 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "parkease_db"
     DATABASE_URL: str = "postgresql://parkease_user:parkease_secure_password@localhost:5432/parkease_db"
 
+    @property
+    def sync_database_url(self) -> str:
+        """
+        Returns normalized PostgreSQL connection URL for SQLAlchemy.
+        Converts legacy 'postgres://' schema (common in Neon/Render) to 'postgresql://'.
+        """
+        if self.DATABASE_URL and self.DATABASE_URL.startswith("postgres://"):
+            return self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        return self.DATABASE_URL
+
     # JWT Security Settings
     JWT_SECRET_KEY: str = "parkease_jwt_secret_key_change_me_in_production_12345"
     JWT_ALGORITHM: str = "HS256"

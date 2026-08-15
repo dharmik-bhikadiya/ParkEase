@@ -116,7 +116,7 @@ This document presents the complete audit and configuration for deploying the **
 
 ## 8. Render Infrastructure Configuration (`render.yaml`)
 
-Created `render.yaml` at the root of the repository:
+Created `render.yaml` at the root of the repository with explicit `plan: free` ($0/month):
 
 ```yaml
 services:
@@ -124,6 +124,7 @@ services:
     name: parkease-backend
     env: python
     region: singapore
+    plan: free
     buildCommand: "pip install -r backend/requirements.txt"
     startCommand: "cd backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
@@ -161,6 +162,7 @@ databases:
     databaseName: parkease_db
     user: parkease_user
     region: singapore
+    plan: free
 ```
 
 ---
@@ -240,7 +242,7 @@ All automated checks executed and PASSED cleanly:
 
 ## 13. GitHub Safety & Working Tree Audit
 
-* `git status` -> Branch `main`, working tree clean.
+* `git status` -> Branch `main`.
 * `git ls-files` -> Verified no SQLite `.db` files, `.env` files, or build artifacts are tracked.
 * No automatic git push was performed.
 
@@ -253,7 +255,7 @@ When you are ready to deploy:
 ### A. Deploy Backend & Database on Render
 1. Go to [Render Dashboard](https://dashboard.render.com).
 2. Click **New +** -> **Blueprints** -> Connect `https://github.com/dharmik-bhikadiya/ParkEase.git`.
-3. Render will auto-detect `render.yaml` and provision `parkease-backend` and `parkease-db`.
+3. Render will auto-detect `render.yaml` and provision `parkease-backend` and `parkease-db` using the **Free plan ($0/month)**.
 4. Copy the backend service URL (e.g. `https://parkease-backend.onrender.com`).
 
 ### B. Deploy Web App on Vercel
@@ -268,4 +270,4 @@ When you are ready to deploy:
 
 ## 15. Summary
 
-The ParkEase monorepo is completely configured, audited, and ready for 1-click production deployment.
+The ParkEase monorepo is completely configured, audited, and ready for 1-click production deployment ($0/month free tier).
