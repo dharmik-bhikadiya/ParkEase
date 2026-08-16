@@ -81,8 +81,8 @@ export const StaffLayout: React.FC<StaffLayoutProps> = ({
               </span>
             </Link>
 
-            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase tracking-wide">
-              <ShieldAlert className="w-3.5 h-3.5 text-emerald-700" /> STAFF PORTAL
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] border border-[#72C98B] uppercase tracking-wide shadow-2xs">
+              <ShieldAlert className="w-3.5 h-3.5 text-[#176B4D]" /> STAFF
             </span>
           </div>
 

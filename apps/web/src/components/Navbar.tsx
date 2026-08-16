@@ -35,9 +35,25 @@ export const Navbar: React.FC = () => {
           <span className="text-2xl font-black text-[#18342A] tracking-tight">
             Park<span className="text-[#176B4D]">Ease</span>
           </span>
-          {isAdmin && (
-            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase">
-              <ShieldCheck className="w-3 h-3 text-emerald-700" /> ADMIN
+          {user && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] border border-[#72C98B] uppercase tracking-wide shadow-2xs">
+              {isAdmin ? (
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#176B4D]" /> ADMIN
+                </>
+              ) : isOwner ? (
+                <>
+                  <Building2 className="w-3.5 h-3.5 text-[#176B4D]" /> OWNER
+                </>
+              ) : isStaff ? (
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#176B4D]" /> STAFF
+                </>
+              ) : (
+                <>
+                  <Car className="w-3.5 h-3.5 text-[#176B4D]" /> DRIVER
+                </>
+              )}
             </span>
           )}
         </Link>
