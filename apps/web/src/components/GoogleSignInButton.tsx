@@ -63,8 +63,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
     const setupGoogleGIS = () => {
       const googleObj = (window as any).google;
-      if (!googleObj?.accounts?.id || !containerRef.current || !isMounted) return;
+      if (!googleObj?.accounts?.id || !isMounted) return;
 
+      // 1. Initialize GIS EXACTLY ONCE per client ID
       if (!isInitializedRef.current) {
         try {
           googleObj.accounts.id.initialize({
@@ -79,13 +80,14 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         }
       }
 
+      // 2. Render Google Button into container with valid numeric pixel width
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
         googleObj.accounts.id.renderButton(containerRef.current, {
           theme: 'outline',
           size: 'large',
-          width: '100%',
-          text: text.toLowerCase().includes('sign up') ? 'signup_with' : 'signin_with',
+          width: 380, // Numeric width in pixels (between 200 and 400)
+          text: text.toLowerCase().includes('sign up') ? 'signup_with' : 'continue_with',
           shape: 'rectangular',
           logo_alignment: 'left',
         });
@@ -110,33 +112,10 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       try {
         (window as any).google?.accounts?.id?.cancel();
       } catch {
-        // Ignore cleanup error
+        // Cleanup active GIS state on unmount
       }
     };
   }, [googleClientId, text]);
-
-  const triggerGoogleAuthFallback = () => {
-    if (isSubmitting) return;
-
-    if (isDevFallback) {
-      handleDevMockAuth();
-      return;
-    }
-
-    const hiddenBtn = containerRef.current?.querySelector('div[role="button"], button, iframe') as HTMLElement;
-    if (hiddenBtn) {
-      hiddenBtn.click();
-    } else {
-      const googleObj = (window as any).google;
-      if (googleObj?.accounts?.id && isInitializedRef.current) {
-        googleObj.accounts.id.prompt((notification: any) => {
-          if (notification.isDismissedMoment() || notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            setIsSubmitting(false);
-          }
-        });
-      }
-    }
-  };
 
   const handleDevMockAuth = async () => {
     setIsSubmitting(true);
@@ -164,14 +143,13 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
   };
 
-  return (
-    <div className="relative w-full">
-      {/* 1. Custom ParkEase UI Button (Visually Displayed) */}
+  if (isDevFallback) {
+    return (
       <button
         type="button"
-        onClick={triggerGoogleAuthFallback}
+        onClick={handleDevMockAuth}
         disabled={isSubmitting}
-        className={`w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 text-gray-700 font-semibold rounded-xl shadow-xs transition-all duration-200 disabled:opacity-60 cursor-pointer ${className}`}
+        className={`w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 text-[#18342A] font-semibold rounded-xl shadow-xs transition-all duration-200 disabled:opacity-60 cursor-pointer ${className}`}
       >
         <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
           <path
@@ -193,17 +171,12 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         </svg>
         <span>{isSubmitting ? 'Authenticating...' : text}</span>
       </button>
+    );
+  }
 
-      {/* 2. Transparent GIS Trigger Overlay (Delegates clicks to Google SDK) */}
-      {!isDevFallback && (
-        <div
-          ref={containerRef}
-          className={`absolute inset-0 opacity-0 overflow-hidden cursor-pointer z-10 ${
-            isSubmitting ? 'pointer-events-none' : 'pointer-events-auto'
-          }`}
-          style={{ transform: 'scale(1.05)', transformOrigin: 'center' }}
-        />
-      )}
+  return (
+    <div className={`w-full flex justify-center overflow-hidden min-h-[44px] ${className}`}>
+      <div ref={containerRef} className="w-full max-w-[400px] flex justify-center min-h-[44px]" />
     </div>
   );
 };
