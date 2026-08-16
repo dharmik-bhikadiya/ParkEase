@@ -1,6 +1,6 @@
 import enum
 from typing import List, Optional
-from sqlalchemy import String, Boolean, Enum
+from sqlalchemy import String, Boolean, Enum, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, generate_uuid
 
@@ -22,7 +22,7 @@ class User(Base, TimestampMixin):
     phone_number: Mapped[Optional[str]] = mapped_column(String(20), unique=True, index=True, nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, nullable=True)
     auth_provider: Mapped[str] = mapped_column(String(50), default="email", nullable=False)
 

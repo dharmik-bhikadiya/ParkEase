@@ -137,13 +137,28 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
+              <Link to="/profile" className="flex items-center gap-2 group cursor-pointer" title="View Profile">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName}
+                    className="w-9 h-9 rounded-full object-cover border-2 border-[#72C98B]/50 shadow-sm transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-[#E8F6EC] text-[#176B4D] font-bold flex items-center justify-center text-sm border border-[#72C98B]/30 transition-transform group-hover:scale-105">
+                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-semibold text-[#18342A] group-hover:text-[#176B4D] transition-colors">{user.fullName}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                </div>
+              </Link>
+
               <span className="hidden sm:inline-block text-xs font-bold px-2.5 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] border border-[#72C98B]/30">
                 {user.role}
               </span>
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-[#18342A]">{user.fullName}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
-              </div>
+
               <button
                 onClick={handleLogout}
                 title="Logout"

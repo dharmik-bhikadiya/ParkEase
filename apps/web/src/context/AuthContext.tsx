@@ -132,6 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await apiClient.patch('/users/me', {
       full_name: data.fullName,
       phone_number: data.phoneNumber,
+      avatar_url: data.avatarUrl,
     });
     const updated = res.data.data;
     setUser(updated);
