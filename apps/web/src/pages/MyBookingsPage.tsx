@@ -207,77 +207,85 @@ export const MyBookingsPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <Card className="p-6 bg-white border border-[#E8F6EC] hover:border-[#72C98B] transition-all rounded-3xl shadow-xs space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                <Card variant="ticket" hoverEffect className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-dashed border-gray-200">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-gray-400">ID: {b.id.substring(0, 8)}</span>
+                        <span className="text-[11px] font-mono font-bold px-2 py-0.5 bg-[#F7F9F5] border border-gray-200 rounded-md text-gray-600 uppercase tracking-wider">
+                          TICKET #{b.id.substring(0, 8)}
+                        </span>
                         {getStatusBadge(b.status)}
                       </div>
-                      <h3 className="text-lg font-bold text-[#18342A]">{b.locationName || 'ParkEase Location'}</h3>
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <h3 className="text-xl font-black text-[#18342A] tracking-tight">{b.locationName || 'ParkEase Location'}</h3>
+                      <p className="text-xs text-gray-500 flex items-center gap-1 font-medium">
                         <MapPin className="w-3.5 h-3.5 text-[#176B4D]" /> {b.locationAddress || 'Vadodara'}
                       </p>
                     </div>
 
-                    <div className="text-right sm:text-right flex sm:flex-col justify-between items-center sm:items-end">
-                      <span className="text-2xl font-extrabold text-[#18342A]">₹{b.totalAmount}</span>
-                      <span className="text-xs font-semibold text-gray-500">{b.totalHours} hrs duration</span>
+                    <div className="text-right sm:text-right flex sm:flex-col justify-between items-center sm:items-end bg-[#E8F6EC]/50 p-3 rounded-xl border border-[#72C98B]/30">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Charge</span>
+                      <span className="text-2xl font-black text-[#176B4D] tracking-tight">₹{b.totalAmount}</span>
+                      <span className="text-[10px] font-bold text-[#18342A]/70">{b.totalHours} hrs session</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-medium">
-                    <div className="p-3 bg-[#F7F9F5] rounded-2xl border border-gray-100 space-y-0.5">
-                      <span className="text-gray-400 block font-semibold">Slot Number</span>
-                      <span className="text-sm font-extrabold text-[#176B4D]">{b.slotNumber || 'A-101'}</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-medium">
+                    <div className="p-3 bg-[#F7F9F5] rounded-xl border border-gray-100 space-y-0.5">
+                      <span className="text-gray-400 block font-semibold text-[10px] uppercase tracking-wider">Assigned Bay</span>
+                      <span className="text-base font-black text-[#176B4D] font-mono">{b.slotNumber || 'BAY A-101'}</span>
                     </div>
 
-                    <div className="p-3 bg-[#F7F9F5] rounded-2xl border border-gray-100 space-y-0.5">
-                      <span className="text-gray-400 block font-semibold">Vehicle</span>
-                      <span className="text-sm font-bold text-gray-800 flex items-center gap-1">
+                    <div className="p-3 bg-[#F7F9F5] rounded-xl border border-gray-100 space-y-0.5">
+                      <span className="text-gray-400 block font-semibold text-[10px] uppercase tracking-wider">Vehicle Tag</span>
+                      <span className="text-xs font-black text-gray-800 flex items-center gap-1 font-mono">
                         <Car className="w-3.5 h-3.5 text-[#176B4D]" /> {b.vehicleNumber}
                       </span>
                     </div>
 
-                    <div className="p-3 bg-[#F7F9F5] rounded-2xl border border-gray-100 space-y-0.5">
-                      <span className="text-gray-400 block font-semibold">Start Time</span>
-                      <span className="text-xs font-bold text-gray-700">
+                    <div className="p-3 bg-[#F7F9F5] rounded-xl border border-gray-100 space-y-0.5">
+                      <span className="text-gray-400 block font-semibold text-[10px] uppercase tracking-wider">Entry Time</span>
+                      <span className="text-xs font-extrabold text-gray-700">
                         {new Date(b.startTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
                     </div>
 
-                    <div className="p-3 bg-[#F7F9F5] rounded-2xl border border-gray-100 space-y-0.5">
-                      <span className="text-gray-400 block font-semibold">End Time</span>
-                      <span className="text-xs font-bold text-gray-700">
+                    <div className="p-3 bg-[#F7F9F5] rounded-xl border border-gray-100 space-y-0.5">
+                      <span className="text-gray-400 block font-semibold text-[10px] uppercase tracking-wider">Exit Time</span>
+                      <span className="text-xs font-extrabold text-gray-700">
                         {new Date(b.endTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="pt-2 flex flex-wrap justify-end gap-3">
-                    {(b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING || b.status === BookingStatus.ACTIVE) && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleOpenQrModal(b)}
-                        className="bg-[#176B4D] hover:bg-[#12543c] text-white font-bold flex items-center gap-1.5 rounded-xl shadow-xs"
-                      >
-                        <QrCode className="w-4 h-4" /> View QR Pass
-                      </Button>
-                    )}
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100">
+                    <span className="text-[11px] font-semibold text-gray-400 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#176B4D]" /> Touchless Barrier Gate Access Guaranteed
+                    </span>
 
-                    {(b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={cancellingId === b.id}
-                        onClick={() => handleCancelBooking(b.id)}
-                        className="text-rose-600 border-rose-200 hover:bg-rose-50 font-bold rounded-xl"
-                      >
-                        {cancellingId === b.id ? 'Cancelling...' : 'Cancel Reservation'}
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {(b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING || b.status === BookingStatus.ACTIVE) && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleOpenQrModal(b)}
+                          className="flex items-center gap-1.5"
+                        >
+                          <QrCode className="w-4 h-4" /> View Gate QR Pass
+                        </Button>
+                      )}
+
+                      {(b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING) && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          disabled={cancellingId === b.id}
+                          onClick={() => handleCancelBooking(b.id)}
+                        >
+                          {cancellingId === b.id ? 'Cancelling...' : 'Cancel Ticket'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </Card>
               </motion.div>

@@ -74,7 +74,7 @@ export const OwnerDashboardPage: React.FC = () => {
 
       {/* 2. REAL METRIC SUMMARY CARDS WITH DIGITAL CLOCK TYPOGRAPHY */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="p-5 bg-white border border-[#E8F6EC] shadow-sm rounded-2xl space-y-2">
+        <Card variant="operational" className="space-y-2">
           <div className="flex items-center justify-between">
             <DigitalMetricDisplay
               label="REGISTERED HUBS"
@@ -89,7 +89,7 @@ export const OwnerDashboardPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-5 bg-white border border-[#E8F6EC] shadow-sm rounded-2xl space-y-2">
+        <Card variant="operational" className="space-y-2">
           <div className="flex items-center justify-between">
             <DigitalMetricDisplay
               label="SYSTEM SLOTS"
@@ -104,7 +104,7 @@ export const OwnerDashboardPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-5 bg-white border border-[#E8F6EC] shadow-sm rounded-2xl space-y-2">
+        <Card variant="operational" className="space-y-2">
           <div className="flex items-center justify-between">
             <DigitalMetricDisplay
               label="AVAILABLE SLOTS"
@@ -119,7 +119,7 @@ export const OwnerDashboardPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-5 bg-white border border-[#E8F6EC] shadow-sm rounded-2xl space-y-2">
+        <Card variant="operational" className="space-y-2">
           <div className="flex items-center justify-between">
             <DigitalMetricDisplay
               label="LIVE RESERVATIONS"

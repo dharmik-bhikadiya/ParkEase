@@ -10,7 +10,6 @@ import {
   Zap,
   Car,
   Bike,
-  Sparkles,
   ArrowLeft,
   CheckCircle2,
   X,
@@ -188,7 +187,7 @@ export const ParkingDetailsPage: React.FC = () => {
               <div className="text-right">
                 <span className="text-xs font-semibold text-gray-500">Available Slots</span>
                 <div className="text-base font-extrabold text-[#176B4D] flex items-center gap-1 justify-end">
-                  <Sparkles className="w-4 h-4 text-emerald-500" /> {availableSlotsCount} / {slots.length} Available
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {availableSlotsCount} / {slots.length} Available
                 </div>
               </div>
             </div>

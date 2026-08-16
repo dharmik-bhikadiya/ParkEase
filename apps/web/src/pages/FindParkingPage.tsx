@@ -12,8 +12,9 @@ import {
   Warehouse,
   X,
   ArrowUpDown,
-  Sparkles,
+  Compass,
   ChevronRight,
+  Layers,
   Car,
   Building2,
 } from 'lucide-react';
@@ -26,7 +27,7 @@ import { ParkingLocation, SearchParkingParams } from '@parkease/shared';
 const SORT_OPTIONS: DropdownOption<'distance' | 'price' | 'availability' | 'rating'>[] = [
   { value: 'distance', label: 'Nearest First', description: 'Closest distance to location', icon: <MapPin className="w-4 h-4" /> },
   { value: 'price', label: 'Lowest Price', description: 'Affordable hourly rates', icon: <ArrowUpDown className="w-4 h-4" /> },
-  { value: 'availability', label: 'Most Slots', description: 'Maximum free parking slots', icon: <Sparkles className="w-4 h-4" /> },
+  { value: 'availability', label: 'Most Slots', description: 'Maximum free parking slots', icon: <Layers className="w-4 h-4" /> },
   { value: 'rating', label: 'Highest Rating', description: 'Top customer reviewed lots', icon: <Star className="w-4 h-4 text-amber-500" /> },
 ];
 
@@ -121,7 +122,7 @@ export const FindParkingPage: React.FC = () => {
       <div className="relative z-40 space-y-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] text-xs font-bold border border-[#72C98B]/30 mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Compass className="w-3.5 h-3.5" />
             Live Parking Discovery
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#18342A] tracking-tight">
@@ -366,7 +367,9 @@ export const FindParkingPage: React.FC = () => {
                   className="cursor-pointer"
                 >
                   <Card
-                    className="p-5 bg-white rounded-3xl transition-all duration-300 border border-[#E8F6EC] hover:border-[#72C98B] hover:shadow-md space-y-4"
+                    variant="location"
+                    hoverEffect
+                    className="space-y-4"
                   >
                     <div className="flex flex-col sm:flex-row gap-4 items-start">
                       {/* Image Thumbnail */}

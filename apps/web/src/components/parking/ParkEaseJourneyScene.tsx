@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle2, QrCode, CreditCard, Sparkles } from 'lucide-react';
+import { Search, CheckCircle2, QrCode, CreditCard, Navigation } from 'lucide-react';
 
 export interface JourneyStep {
   step: string;
@@ -28,7 +28,7 @@ export const ParkEaseJourneyScene: React.FC = () => {
         className="text-center max-w-3xl mx-auto space-y-3"
       >
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] text-xs font-bold border border-[#72C98B]/30 shadow-xs">
-          <Sparkles className="w-3.5 h-3.5 text-[#176B4D]" />
+          <Navigation className="w-3.5 h-3.5 text-[#176B4D]" />
           End-to-End Mobility
         </div>
         <h2 className="text-3xl sm:text-4xl font-extrabold text-[#18342A] tracking-tight">

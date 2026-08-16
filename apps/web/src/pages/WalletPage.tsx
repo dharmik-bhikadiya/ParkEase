@@ -10,7 +10,8 @@ import {
   Building2,
   CheckCircle2,
   X,
-  Sparkles,
+  Zap,
+  ShieldCheck,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -131,21 +132,21 @@ export const WalletPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Balance Card */}
         <div className="lg:col-span-5 space-y-4">
-          <Card className="p-6 bg-gradient-to-br from-[#18342A] via-[#176B4D] to-[#12543c] text-white rounded-3xl shadow-xl space-y-6 relative overflow-hidden border border-[#72C98B]/30">
+          <Card variant="financial" className="space-y-6">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
               <WalletIcon className="w-48 h-48 text-white" />
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#72C98B]">Digital Balance</span>
-              <Sparkles className="w-5 h-5 text-amber-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[#72C98B]">ParkEase Passbook Balance</span>
+              <ShieldCheck className="w-5 h-5 text-[#72C98B]" />
             </div>
 
             <div>
-              <span className="text-xs font-medium text-gray-300">Available Balance</span>
-              <div className="text-4xl font-black tracking-tight text-white mt-1">
+              <span className="text-xs font-semibold text-emerald-200/80 uppercase tracking-widest block mb-1">Active Digital Credits</span>
+              <div className="text-4xl sm:text-5xl font-black tracking-tight text-white font-mono">
                 ₹{wallet ? wallet.balance.toFixed(2) : '0.00'}
-                <span className="text-sm font-semibold text-[#72C98B] ml-2">{wallet?.currency || 'INR'}</span>
+                <span className="text-sm font-bold text-[#72C98B] ml-2.5 font-sans">{wallet?.currency || 'INR'}</span>
               </div>
             </div>
 
@@ -162,7 +163,7 @@ export const WalletPage: React.FC = () => {
                       setTopupAmount(amt);
                       setShowTopupModal(true);
                     }}
-                    className="py-2 bg-white/15 hover:bg-white/25 backdrop-blur-md rounded-xl text-xs font-extrabold text-white transition-all border border-white/20"
+                    className="py-2.5 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-extrabold text-white transition-all border border-white/20 cursor-pointer"
                   >
                     +₹{amt}
                   </button>
@@ -298,7 +299,7 @@ export const WalletPage: React.FC = () => {
                           : 'bg-white border-gray-200 text-gray-700'
                       }`}
                     >
-                      <Sparkles className="w-5 h-5 mx-auto text-[#176B4D]" />
+                      <Zap className="w-5 h-5 mx-auto text-[#176B4D]" />
                       <span>UPI Instant</span>
                     </button>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Search, MapPin, Zap, QrCode, CreditCard, Sparkles } from 'lucide-react';
+import { Search, MapPin, Zap, QrCode, CreditCard, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ParkEaseMapScene, PARKING_SPOTS } from '../components/parking/ParkEaseMapScene';
 import { ParkEaseJourneyScene } from '../components/parking/ParkEaseJourneyScene';
@@ -75,7 +75,7 @@ export const LandingPage: React.FC = () => {
               transition={{ duration: 0.4 }}
               className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] text-xs font-semibold tracking-wide border border-[#72C98B]/30 shadow-xs"
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#176B4D]" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[#176B4D]" />
               Next-Gen Mobility Parking Platform
             </motion.div>
 
