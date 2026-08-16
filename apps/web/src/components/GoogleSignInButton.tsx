@@ -115,6 +115,29 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     };
   }, [googleClientId, text]);
 
+  const triggerGoogleAuthFallback = () => {
+    if (isSubmitting) return;
+
+    if (isDevFallback) {
+      handleDevMockAuth();
+      return;
+    }
+
+    const hiddenBtn = containerRef.current?.querySelector('div[role="button"], button, iframe') as HTMLElement;
+    if (hiddenBtn) {
+      hiddenBtn.click();
+    } else {
+      const googleObj = (window as any).google;
+      if (googleObj?.accounts?.id && isInitializedRef.current) {
+        googleObj.accounts.id.prompt((notification: any) => {
+          if (notification.isDismissedMoment() || notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setIsSubmitting(false);
+          }
+        });
+      }
+    }
+  };
+
   const handleDevMockAuth = async () => {
     setIsSubmitting(true);
     try {
@@ -141,15 +164,16 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
   };
 
-  if (isDevFallback) {
-    return (
+  return (
+    <div className="relative w-full">
+      {/* 1. Custom ParkEase UI Button (Visually Displayed) */}
       <button
         type="button"
-        onClick={handleDevMockAuth}
+        onClick={triggerGoogleAuthFallback}
         disabled={isSubmitting}
         className={`w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 text-gray-700 font-semibold rounded-xl shadow-xs transition-all duration-200 disabled:opacity-60 cursor-pointer ${className}`}
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
           <path
             fill="#4285F4"
             d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
@@ -169,12 +193,17 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         </svg>
         <span>{isSubmitting ? 'Authenticating...' : text}</span>
       </button>
-    );
-  }
 
-  return (
-    <div className="w-full flex justify-center min-h-[44px]">
-      <div ref={containerRef} className="w-full min-h-[44px] flex justify-center" />
+      {/* 2. Transparent GIS Trigger Overlay (Delegates clicks to Google SDK) */}
+      {!isDevFallback && (
+        <div
+          ref={containerRef}
+          className={`absolute inset-0 opacity-0 overflow-hidden cursor-pointer z-10 ${
+            isSubmitting ? 'pointer-events-none' : 'pointer-events-auto'
+          }`}
+          style={{ transform: 'scale(1.05)', transformOrigin: 'center' }}
+        />
+      )}
     </div>
   );
 };
