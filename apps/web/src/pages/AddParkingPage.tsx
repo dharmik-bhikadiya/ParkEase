@@ -19,6 +19,7 @@ import { Input } from '../components/ui/Input';
 import { parkingApi } from '../api/parkingApi';
 import { ParkingType, CreateParkingRequest } from '@parkease/shared';
 import { OwnerLayout } from '../components/owner/OwnerLayout';
+import { SelectDropdown } from '../components/ui/SelectDropdown';
 
 const STEPS = [
   { id: 1, title: 'Basic Info', icon: Building2 },
@@ -175,21 +176,21 @@ export const AddParkingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-600 block mb-1">Parking Category / Type</label>
-                <select
+                <SelectDropdown<string>
+                  label="Parking Category / Type"
+                  options={[
+                    { value: ParkingType.RAILWAY_STATION, label: 'Railway Station', description: '24/7 guarded station parking' },
+                    { value: ParkingType.AIRPORT, label: 'Airport Terminal', description: 'Long term & short term airport parking' },
+                    { value: ParkingType.BUS_STAND, label: 'Central Bus Stand', description: 'Convenient bus terminal parking' },
+                    { value: ParkingType.MALL, label: 'Shopping Mall', description: 'Covered mall parking' },
+                    { value: ParkingType.HOSPITAL, label: 'Hospital & Medical', description: 'Emergency & visitor parking' },
+                    { value: ParkingType.CINEMA, label: 'Cinema & Multiplex', description: 'Entertainment hub parking' },
+                    { value: ParkingType.TOURIST_PLACE, label: 'Tourist Destination', description: 'Sightseeing & heritage parking' },
+                    { value: ParkingType.OTHER, label: 'Other / Commercial', description: 'Private or office building parking' },
+                  ]}
                   value={formData.parkingType}
-                  onChange={(e) => updateField('parkingType', e.target.value)}
-                  className="w-full p-3 bg-[#F7F9F5] border border-gray-200 rounded-xl text-sm font-bold text-[#18342A] outline-none"
-                >
-                  <option value="RAILWAY_STATION">Railway Station</option>
-                  <option value="AIRPORT">Airport</option>
-                  <option value="BUS_STAND">Bus Stand</option>
-                  <option value="MALL">Shopping Mall</option>
-                  <option value="HOSPITAL">Hospital</option>
-                  <option value="CINEMA">Cinema/Multiplex</option>
-                  <option value="TOURIST_PLACE">Tourist Destination</option>
-                  <option value="OTHER">Other / Commercial</option>
-                </select>
+                  onChange={(val) => updateField('parkingType', val as any)}
+                />
               </div>
             </div>
           </div>

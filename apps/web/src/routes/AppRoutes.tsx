@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Search, MapPin, ShieldCheck, Zap, QrCode, CreditCard, Sparkles } from 'lucide-react';
+import { Search, MapPin, Zap, QrCode, CreditCard, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ParkEaseMapScene, PARKING_SPOTS } from '../components/parking/ParkEaseMapScene';
 import { ParkEaseJourneyScene } from '../components/parking/ParkEaseJourneyScene';
@@ -261,33 +261,6 @@ export const LandingPage: React.FC = () => {
               </Card>
             </motion.div>
           </div>
-        </section>
-
-        {/* UNIFIED ARCHITECTURE & AUTH NOTICE */}
-        <section className="max-w-4xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="flex flex-col sm:flex-row items-center justify-between p-5 bg-white border border-[#176B4D]/20 shadow-xs rounded-2xl gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#E8F6EC] flex items-center justify-center text-[#176B4D] shrink-0">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-[#18342A]">Phase 2A Auth & Google OAuth Active</h4>
-                  <p className="text-xs text-gray-500">
-                    Unified FastAPI backend, SQLAlchemy PostgreSQL models, and cross-platform Web/Mobile auth active.
-                  </p>
-                </div>
-              </div>
-              <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#E8F6EC] text-[#176B4D] border border-[#72C98B]/30 whitespace-nowrap">
-                Auth Active
-              </span>
-            </Card>
-          </motion.div>
         </section>
       </div>
     </div>

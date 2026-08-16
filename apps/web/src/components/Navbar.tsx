@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Car, User as UserIcon, LogOut, Search, Building2, ShieldCheck, Calendar, Wallet as WalletIcon, QrCode } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Car, User as UserIcon, Search, Building2, ShieldCheck, Calendar, Wallet as WalletIcon, QrCode } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ParkEaseAnimatedLogo } from './brand/ParkEaseAnimatedLogo';
 import { UserRole } from '@parkease/shared';
 import { walletApi } from '../api/walletApi';
+import { UserProfileDropdown } from './ui/UserProfileDropdown';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
@@ -19,7 +19,6 @@ export const Navbar: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
   };
 
   const isAdmin = user && user.role === UserRole.ADMIN;
@@ -136,37 +135,11 @@ export const Navbar: React.FC = () => {
         {/* User Actions */}
         <div className="flex items-center gap-4">
           {user ? (
-            <div className="flex items-center gap-3">
-              <Link to="/profile" className="flex items-center gap-2 group cursor-pointer" title="View Profile">
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.fullName}
-                    className="w-9 h-9 rounded-full object-cover border-2 border-[#72C98B]/50 shadow-sm transition-transform group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-[#E8F6EC] text-[#176B4D] font-bold flex items-center justify-center text-sm border border-[#72C98B]/30 transition-transform group-hover:scale-105">
-                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                )}
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-[#18342A] group-hover:text-[#176B4D] transition-colors">{user.fullName}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
-                </div>
-              </Link>
-
-              <span className="hidden sm:inline-block text-xs font-bold px-2.5 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] border border-[#72C98B]/30">
-                {user.role}
-              </span>
-
-              <button
-                onClick={handleLogout}
-                title="Logout"
-                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
+            <UserProfileDropdown
+              user={user}
+              walletBalance={walletBalance}
+              onLogout={handleLogout}
+            />
           ) : (
             <div className="flex items-center gap-3">
               <Link

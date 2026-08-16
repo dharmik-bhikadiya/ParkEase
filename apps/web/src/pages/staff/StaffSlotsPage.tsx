@@ -4,6 +4,7 @@ import { StaffLayout } from '../../components/staff/StaffLayout';
 import { Card } from '../../components/ui/Card';
 import { parkingApi } from '../../api/parkingApi';
 import { ParkingLocation, ParkingSlot } from '@parkease/shared';
+import { SelectDropdown } from '../../components/ui/SelectDropdown';
 
 export const StaffSlotsPage: React.FC = () => {
   const [locations, setLocations] = useState<ParkingLocation[]>([]);
@@ -54,17 +55,18 @@ export const StaffSlotsPage: React.FC = () => {
             <label className="text-xs font-extrabold text-[#18342A] uppercase tracking-wider flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[#176B4D]" /> Select Assigned Parking Hub:
             </label>
-            <select
-              value={selectedLocationId}
-              onChange={(e) => setSelectedLocationId(e.target.value)}
-              className="px-4 py-2 bg-[#F7F9F5] border border-gray-200 rounded-xl text-xs font-extrabold text-[#18342A] focus:outline-none"
-            >
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name} ({loc.city}) — {loc.totalSlots} Slots
-                </option>
-              ))}
-            </select>
+            <div className="w-72">
+              <SelectDropdown
+                options={locations.map((loc) => ({
+                  value: loc.id,
+                  label: `${loc.name} (${loc.city})`,
+                  description: `${loc.totalSlots} Total Slots`,
+                }))}
+                value={selectedLocationId}
+                onChange={(val) => setSelectedLocationId(val)}
+                size="sm"
+              />
+            </div>
           </div>
         )}
 

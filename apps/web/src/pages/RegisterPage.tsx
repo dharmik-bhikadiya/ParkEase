@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, Lock, ArrowRight, AlertCircle, Shield, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Phone, Lock, ArrowRight, AlertCircle, Shield, Eye, EyeOff, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '@parkease/shared';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ParkEaseAnimatedLogo } from '../components/brand/ParkEaseAnimatedLogo';
+import { SelectDropdown } from '../components/ui/SelectDropdown';
 
 export const RegisterPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -147,21 +148,31 @@ export const RegisterPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#18342A] uppercase tracking-wider mb-1.5">
-              Account Role
-            </label>
-            <div className="relative">
-              <Shield className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#72C98B] focus:border-transparent text-sm font-medium bg-white transition-all"
-              >
-                <option value={UserRole.USER}>Driver / Regular User</option>
-                <option value={UserRole.PARKING_OWNER}>Parking Location Owner</option>
-                <option value={UserRole.PARKING_STAFF}>Parking Field Staff</option>
-              </select>
-            </div>
+            <SelectDropdown
+              label="Account Role"
+              options={[
+                {
+                  value: UserRole.USER,
+                  label: 'Driver / Regular User',
+                  description: 'Find & reserve parking spots, make payments & manage vehicles',
+                  icon: <User className="w-4 h-4 text-[#176B4D]" />,
+                },
+                {
+                  value: UserRole.PARKING_OWNER,
+                  label: 'Parking Location Owner',
+                  description: 'List parking locations, configure slots & track revenue',
+                  icon: <Building2 className="w-4 h-4 text-[#176B4D]" />,
+                },
+                {
+                  value: UserRole.PARKING_STAFF,
+                  label: 'Parking Field Staff',
+                  description: 'Scan QR passes at gate entry & monitor live slot status',
+                  icon: <Shield className="w-4 h-4 text-emerald-600" />,
+                },
+              ]}
+              value={role}
+              onChange={(val) => setRole(val as UserRole)}
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

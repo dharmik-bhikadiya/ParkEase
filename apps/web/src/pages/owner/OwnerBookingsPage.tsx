@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Filter, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Calendar, Search, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { OwnerLayout } from '../../components/owner/OwnerLayout';
 import { Card } from '../../components/ui/Card';
 import { bookingApi } from '../../api/booking';
 import { Booking } from '@parkease/shared';
+import { SelectDropdown } from '../../components/ui/SelectDropdown';
 
 export const OwnerBookingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -56,18 +57,20 @@ export const OwnerBookingsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-3 py-2 bg-[#F7F9F5] border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none text-[#18342A]"
-            >
-              <option value="ALL">All Statuses ({bookings.length})</option>
-              <option value="CONFIRMED">Confirmed</option>
-              <option value="ACTIVE">Active Session</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
+            <div className="w-48">
+              <SelectDropdown
+                options={[
+                  { value: 'ALL', label: `All Statuses (${bookings.length})` },
+                  { value: 'CONFIRMED', label: 'Confirmed' },
+                  { value: 'ACTIVE', label: 'Active Session' },
+                  { value: 'COMPLETED', label: 'Completed' },
+                  { value: 'CANCELLED', label: 'Cancelled' },
+                ]}
+                value={statusFilter}
+                onChange={(val) => setStatusFilter(val as any)}
+                size="sm"
+              />
+            </div>
           </div>
         </div>
 

@@ -14,11 +14,47 @@ import {
   ArrowUpDown,
   Sparkles,
   ChevronRight,
+  Car,
+  Building2,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { SelectDropdown, DropdownOption } from '../components/ui/SelectDropdown';
 import { parkingApi } from '../api/parkingApi';
 import { ParkingLocation, SearchParkingParams } from '@parkease/shared';
+
+const SORT_OPTIONS: DropdownOption<'distance' | 'price' | 'availability' | 'rating'>[] = [
+  { value: 'distance', label: 'Nearest First', description: 'Closest distance to location', icon: <MapPin className="w-4 h-4" /> },
+  { value: 'price', label: 'Lowest Price', description: 'Affordable hourly rates', icon: <ArrowUpDown className="w-4 h-4" /> },
+  { value: 'availability', label: 'Most Slots', description: 'Maximum free parking slots', icon: <Sparkles className="w-4 h-4" /> },
+  { value: 'rating', label: 'Highest Rating', description: 'Top customer reviewed lots', icon: <Star className="w-4 h-4 text-amber-500" /> },
+];
+
+const CITY_OPTIONS: DropdownOption[] = [
+  { value: '', label: 'All Cities', description: 'Search across Gujarat & India' },
+  { value: 'Ahmedabad', label: 'Ahmedabad', description: 'SG Highway, Station, Airport' },
+  { value: 'Vadodara', label: 'Vadodara', description: 'Alkapuri, Station, Sayajigunj' },
+  { value: 'Surat', label: 'Surat', description: 'Ring Road, Vesu, Station' },
+  { value: 'Rajkot', label: 'Rajkot', description: 'Kalawad Road, Yagnik Road' },
+];
+
+const VEHICLE_TYPE_OPTIONS: DropdownOption[] = [
+  { value: 'ALL', label: 'All Vehicles', description: 'Show all parking spots', icon: <Car className="w-4 h-4" /> },
+  { value: 'CAR', label: 'Car / Sedan / SUV', description: '4-Wheeler parking slots', icon: <Car className="w-4 h-4" /> },
+  { value: 'BIKE', label: 'Motorbike / Scooter', description: '2-Wheeler parking slots' },
+  { value: 'EV', label: 'EV Electric Vehicle', description: 'Spots with charging stations', icon: <Zap className="w-4 h-4 text-emerald-600" /> },
+];
+
+const PARKING_TYPE_OPTIONS: DropdownOption[] = [
+  { value: 'ALL', label: 'All Categories', description: 'Malls, Stations, Airports & more', icon: <Building2 className="w-4 h-4" /> },
+  { value: 'RAILWAY_STATION', label: 'Railway Station', description: '24/7 guarded station parking' },
+  { value: 'AIRPORT', label: 'Airport Terminal', description: 'Long & short term airport parking' },
+  { value: 'BUS_STAND', label: 'Central Bus Stand', description: 'Convenient bus terminal parking' },
+  { value: 'MALL', label: 'Shopping Mall', description: 'Covered mall parking' },
+  { value: 'HOSPITAL', label: 'Hospital & Medical', description: 'Emergency & visitor parking' },
+  { value: 'CINEMA', label: 'Cinema & Multiplex', description: 'Entertainment hub parking' },
+  { value: 'TOURIST_PLACE', label: 'Tourist Destination', description: 'Sightseeing & heritage parking' },
+];
 
 export const FindParkingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +63,7 @@ export const FindParkingPage: React.FC = () => {
   const [locations, setLocations] = useState<ParkingLocation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedSpot, setSelectedSpot] = useState<ParkingLocation | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
@@ -44,8 +81,9 @@ export const FindParkingPage: React.FC = () => {
   const fetchParkingLocations = async () => {
     setLoading(true);
     try {
+      const combinedQuery = [searchQuery, selectedCity].filter(Boolean).join(' ');
       const params: SearchParkingParams = {
-        query: searchQuery || undefined,
+        query: combinedQuery || undefined,
         vehicleType: selectedVehicleType !== 'ALL' ? (selectedVehicleType as any) : undefined,
         parkingType: selectedParkingType !== 'ALL' ? (selectedParkingType as any) : undefined,
         maxPrice: maxPrice < 100 ? maxPrice : undefined,
@@ -70,7 +108,7 @@ export const FindParkingPage: React.FC = () => {
 
   useEffect(() => {
     fetchParkingLocations();
-  }, [selectedVehicleType, selectedParkingType, maxPrice, filterCovered, filterCctv, filterEv, filterSecurity, minRating, sortBy]);
+  }, [selectedCity, selectedVehicleType, selectedParkingType, maxPrice, filterCovered, filterCctv, filterEv, filterSecurity, minRating, sortBy]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +118,7 @@ export const FindParkingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F7F9F5] py-6 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-6">
       {/* 1. TOP HEADER & SEARCH BAR */}
-      <div className="space-y-4">
+      <div className="relative z-40 space-y-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] text-xs font-bold border border-[#72C98B]/30 mb-2">
             <Sparkles className="w-3.5 h-3.5" />
@@ -95,7 +133,7 @@ export const FindParkingPage: React.FC = () => {
         </div>
 
         {/* Search Bar Component */}
-        <Card className="p-3 bg-white border border-[#176B4D]/20 shadow-md shadow-[#18342A]/5 rounded-2xl">
+        <Card className="p-3 bg-white border border-[#176B4D]/20 shadow-md shadow-[#18342A]/5 rounded-2xl overflow-visible">
           <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row items-center gap-3">
             <div className="flex items-center gap-2.5 w-full px-4 py-2.5 bg-[#F7F9F5] rounded-xl border border-transparent focus-within:border-[#176B4D]/40 focus-within:bg-white transition-all">
               <MapPin className="w-5 h-5 text-[#176B4D] shrink-0" />
@@ -113,42 +151,48 @@ export const FindParkingPage: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full md:w-auto shrink-0">
+              {/* City Selection Dropdown */}
+              <div className="w-full sm:w-44">
+                <SelectDropdown
+                  options={CITY_OPTIONS}
+                  value={selectedCity}
+                  onChange={(val) => setSelectedCity(val)}
+                  placeholder="All Cities"
+                  size="sm"
+                />
+              </div>
+
+              {/* Sort By Dropdown */}
+              <div className="w-full sm:w-44">
+                <SelectDropdown
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(val) => setSortBy(val as any)}
+                  size="sm"
+                />
+              </div>
+
               <Button
                 type="submit"
                 variant="primary"
-                className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-[#176B4D] hover:bg-[#12543c] text-white font-semibold py-2.5 px-5 rounded-xl shadow-xs"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-[#176B4D] hover:bg-[#12543c] text-white font-semibold py-2 px-4 rounded-xl text-xs shadow-xs"
               >
-                <Search className="w-4 h-4" /> Search
+                <Search className="w-3.5 h-3.5" /> Search
               </Button>
 
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`p-2.5 rounded-xl border transition-all flex items-center gap-2 text-sm font-semibold cursor-pointer ${
+                className={`p-2 rounded-xl border transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer shrink-0 ${
                   isFilterOpen || filterCovered || filterCctv || filterEv || filterSecurity || minRating > 0
                     ? 'bg-[#E8F6EC] border-[#176B4D] text-[#176B4D]'
                     : 'bg-white border-[#E8F6EC] text-[#18342A] hover:border-[#72C98B]'
                 }`}
               >
-                <SlidersHorizontal className="w-4 h-4" />
+                <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Filters</span>
               </button>
-
-              {/* Sort Select */}
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="appearance-none bg-white border border-[#E8F6EC] hover:border-[#72C98B] text-[#18342A] font-semibold text-sm py-2.5 pl-3 pr-8 rounded-xl outline-none cursor-pointer"
-                >
-                  <option value="distance">Sort: Nearest</option>
-                  <option value="price">Sort: Lowest Price</option>
-                  <option value="availability">Sort: Most Slots</option>
-                  <option value="rating">Sort: Highest Rated</option>
-                </select>
-                <ArrowUpDown className="w-3.5 h-3.5 text-gray-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
             </div>
           </form>
         </Card>
@@ -161,7 +205,7 @@ export const FindParkingPage: React.FC = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
+            className="relative z-30 overflow-visible"
           >
             <Card className="p-5 bg-white border border-[#72C98B]/30 shadow-xs rounded-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -170,6 +214,7 @@ export const FindParkingPage: React.FC = () => {
                 </h3>
                 <button
                   onClick={() => {
+                    setSelectedCity('');
                     setSelectedVehicleType('ALL');
                     setSelectedParkingType('ALL');
                     setMaxPrice(100);
@@ -179,50 +224,33 @@ export const FindParkingPage: React.FC = () => {
                     setFilterSecurity(false);
                     setMinRating(0);
                   }}
-                  className="text-xs font-bold text-[#176B4D] hover:underline"
+                  className="text-xs font-bold text-[#176B4D] hover:underline cursor-pointer"
                 >
                   Reset All Filters
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {/* Vehicle Type Filter */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Vehicle Type</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {['ALL', 'CAR', 'BIKE', 'SUV', 'EV'].map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setSelectedVehicleType(type)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                          selectedVehicleType === type
-                            ? 'bg-[#176B4D] text-white border-[#176B4D]'
-                            : 'bg-white text-[#18342A] border-[#E8F6EC] hover:border-[#72C98B]'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
+                {/* Vehicle Type Filter Dropdown */}
+                <div>
+                  <SelectDropdown
+                    label="Vehicle Type"
+                    options={VEHICLE_TYPE_OPTIONS}
+                    value={selectedVehicleType}
+                    onChange={(val) => setSelectedVehicleType(val)}
+                    size="sm"
+                  />
                 </div>
 
-                {/* Parking Type Filter */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Location Type</label>
-                  <select
+                {/* Parking Category Filter Dropdown */}
+                <div>
+                  <SelectDropdown
+                    label="Location Type"
+                    options={PARKING_TYPE_OPTIONS}
                     value={selectedParkingType}
-                    onChange={(e) => setSelectedParkingType(e.target.value)}
-                    className="w-full bg-[#F7F9F5] border border-[#E8F6EC] text-[#18342A] text-xs font-bold py-2 px-3 rounded-lg outline-none"
-                  >
-                    <option value="ALL">All Categories</option>
-                    <option value="RAILWAY_STATION">Railway Station</option>
-                    <option value="AIRPORT">Airport</option>
-                    <option value="BUS_STAND">Bus Stand</option>
-                    <option value="MALL">Shopping Mall</option>
-                    <option value="HOSPITAL">Hospital</option>
-                    <option value="CINEMA">Cinema/Multiplex</option>
-                    <option value="TOURIST_PLACE">Tourist Destination</option>
-                  </select>
+                    onChange={(val) => setSelectedParkingType(val)}
+                    size="sm"
+                  />
                 </div>
 
                 {/* Amenities Toggles */}

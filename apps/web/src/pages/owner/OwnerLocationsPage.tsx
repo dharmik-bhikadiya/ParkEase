@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { parkingApi } from '../../api/parkingApi';
 import { ParkingLocation } from '@parkease/shared';
+import { SelectDropdown } from '../../components/ui/SelectDropdown';
 
 export const OwnerLocationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -58,16 +59,19 @@ export const OwnerLocationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-3 py-2 bg-[#F7F9F5] border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none text-[#18342A]"
-            >
-              <option value="ALL">All Statuses ({locations.length})</option>
-              <option value="ACTIVE">Approved / Active</option>
-              <option value="PENDING_APPROVAL">Pending Approval</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
+            <div className="w-48">
+              <SelectDropdown
+                options={[
+                  { value: 'ALL', label: `All Statuses (${locations.length})` },
+                  { value: 'ACTIVE', label: 'Approved / Active' },
+                  { value: 'PENDING_APPROVAL', label: 'Pending Approval' },
+                  { value: 'REJECTED', label: 'Rejected' },
+                ]}
+                value={statusFilter}
+                onChange={(val) => setStatusFilter(val as any)}
+                size="sm"
+              />
+            </div>
 
             <Button
               variant="primary"

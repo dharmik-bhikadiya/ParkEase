@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Car, Plus, Trash2, Edit3, Star, Zap, Bike, AlertCircle, X } from 'lucide-react';
 import { UserVehicle, VehicleType } from '@parkease/shared';
 import { apiClient } from '../api/client';
+import { SelectDropdown } from '../components/ui/SelectDropdown';
 
 export const VehiclesPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<UserVehicle[]>([]);
@@ -282,20 +283,18 @@ export const VehiclesPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#18342A] uppercase tracking-wider mb-1.5">
-                      Vehicle Category
-                    </label>
-                    <select
+                    <SelectDropdown
+                      label="Vehicle Category"
+                      options={[
+                        { value: VehicleType.CAR, label: 'Car / Sedan', icon: <Car className="w-4 h-4" /> },
+                        { value: VehicleType.SUV, label: 'SUV / MUV', icon: <Car className="w-4 h-4" /> },
+                        { value: VehicleType.BIKE, label: 'Bike / Two Wheeler', icon: <Bike className="w-4 h-4 text-[#176B4D]" /> },
+                        { value: VehicleType.EV, label: 'Electric Vehicle (EV)', icon: <Zap className="w-4 h-4 text-emerald-500" /> },
+                        { value: VehicleType.OTHER, label: 'Other' },
+                      ]}
                       value={vehicleType}
-                      onChange={(e) => setVehicleType(e.target.value as VehicleType)}
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[#72C98B] text-sm font-medium bg-white focus:outline-none"
-                    >
-                      <option value={VehicleType.CAR}>Car</option>
-                      <option value={VehicleType.SUV}>SUV</option>
-                      <option value={VehicleType.BIKE}>Bike / Two Wheeler</option>
-                      <option value={VehicleType.EV}>Electric Vehicle (EV)</option>
-                      <option value={VehicleType.OTHER}>Other</option>
-                    </select>
+                      onChange={(val) => setVehicleType(val as VehicleType)}
+                    />
                   </div>
 
                   <div className="flex flex-col gap-3 pt-2">

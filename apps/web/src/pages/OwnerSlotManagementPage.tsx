@@ -13,6 +13,7 @@ import { Input } from '../components/ui/Input';
 import { parkingApi } from '../api/parkingApi';
 import { ParkingLocation, ParkingSlot, SlotStatus, VehicleType } from '@parkease/shared';
 import { OwnerLayout } from '../components/owner/OwnerLayout';
+import { SelectDropdown } from '../components/ui/SelectDropdown';
 
 export const OwnerSlotManagementPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -227,32 +228,34 @@ export const OwnerSlotManagementPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-gray-600 block mb-1">Allowed Vehicle Type</label>
-                  <select
+                  <SelectDropdown<string>
+                    label="Allowed Vehicle Type"
+                    options={[
+                      { value: 'CAR', label: 'CAR (Standard)' },
+                      { value: 'BIKE', label: 'BIKE (Two Wheeler)' },
+                      { value: 'SUV', label: 'SUV (Large)' },
+                      { value: 'EV', label: 'EV (Electric Vehicle)' },
+                    ]}
                     value={vehicleType}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVehicleType(e.target.value as any)}
-                    className="w-full p-2.5 bg-[#F7F9F5] border border-gray-200 rounded-xl text-xs font-bold text-[#18342A] outline-none"
-                  >
-                    <option value="CAR">CAR (Standard)</option>
-                    <option value="BIKE">BIKE (Two Wheeler)</option>
-                    <option value="SUV">SUV (Large)</option>
-                    <option value="EV">EV (Electric Vehicle)</option>
-                  </select>
+                    onChange={(val) => setVehicleType(val as any)}
+                    size="sm"
+                  />
                 </div>
 
                 <div>
-                  <label className="text-gray-600 block mb-1">Operational Slot Status</label>
-                  <select
+                  <SelectDropdown<string>
+                    label="Operational Slot Status"
+                    options={[
+                      { value: 'AVAILABLE', label: 'AVAILABLE (Open for drivers)' },
+                      { value: 'OCCUPIED', label: 'OCCUPIED (Vehicle currently parked)' },
+                      { value: 'RESERVED', label: 'RESERVED (Hold state)' },
+                      { value: 'BLOCKED', label: 'BLOCKED (Manually disabled by owner)' },
+                      { value: 'MAINTENANCE', label: 'MAINTENANCE (Under repair)' },
+                    ]}
                     value={slotStatus}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSlotStatus(e.target.value as any)}
-                    className="w-full p-2.5 bg-[#F7F9F5] border border-gray-200 rounded-xl text-xs font-bold text-[#18342A] outline-none"
-                  >
-                    <option value="AVAILABLE">AVAILABLE (Open for drivers)</option>
-                    <option value="OCCUPIED">OCCUPIED (Vehicle currently parked)</option>
-                    <option value="RESERVED">RESERVED (Hold state)</option>
-                    <option value="BLOCKED">BLOCKED (Manually disabled by owner)</option>
-                    <option value="MAINTENANCE">MAINTENANCE (Under repair)</option>
-                  </select>
+                    onChange={(val) => setSlotStatus(val as any)}
+                    size="sm"
+                  />
                 </div>
               </div>
 
