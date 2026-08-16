@@ -15,7 +15,7 @@ class UserVehicle(Base, TimestampMixin):
     __tablename__ = "user_vehicles"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     vehicle_type: Mapped[VehicleType] = mapped_column(Enum(VehicleType), default=VehicleType.CAR, nullable=False)
     registration_number: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
     nickname: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

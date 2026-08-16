@@ -102,8 +102,8 @@ class ParkingStaffAssignment(Base, TimestampMixin):
     __tablename__ = "parking_staff_assignments"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    staff_user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True, nullable=False)
-    parking_location_id: Mapped[str] = mapped_column(String(36), ForeignKey("parking_locations.id"), index=True, nullable=False)
+    staff_user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    parking_location_id: Mapped[str] = mapped_column(String(36), ForeignKey("parking_locations.id", ondelete="CASCADE"), index=True, nullable=False)
 
     # Relationships
     staff_user = relationship("User", foreign_keys=[staff_user_id])

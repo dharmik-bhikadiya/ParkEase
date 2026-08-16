@@ -12,7 +12,7 @@ class QrPass(Base, TimestampMixin):
     __tablename__ = "qr_passes"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    booking_id: Mapped[str] = mapped_column(String(36), ForeignKey("bookings.id"), nullable=False)
+    booking_id: Mapped[str] = mapped_column(String(36), ForeignKey("bookings.id", ondelete="CASCADE"), nullable=False)
     type: Mapped[QrType] = mapped_column(Enum(QrType), nullable=False)
     qr_payload: Mapped[str] = mapped_column(String(500), nullable=False)
     hash_signature: Mapped[str] = mapped_column(String(255), nullable=False)

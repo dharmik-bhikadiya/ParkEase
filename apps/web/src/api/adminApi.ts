@@ -52,4 +52,8 @@ export const adminApi = {
     const res = await apiClient.get('/admin/payments');
     return res.data.data || [];
   },
+
+  deleteUser: async (userId: string): Promise<void> => {
+    await apiClient.delete(`/admin/users/${userId}`);
+  },
 };

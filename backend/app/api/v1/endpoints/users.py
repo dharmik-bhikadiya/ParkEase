@@ -108,3 +108,14 @@ def delete_vehicle(
     """
     vehicle_service.delete_vehicle(db, current_user.id, vehicle_id)
     return APIResponse(message="Vehicle deleted successfully")
+
+@router.delete("/me", response_model=APIResponse[None])
+def delete_my_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Permanently delete authenticated user's account and all dependent data.
+    """
+    auth_service.delete_user_account(db, target_user=current_user, requesting_user=current_user)
+    return APIResponse(message="Account permanently deleted successfully")

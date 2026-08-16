@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User as UserIcon, Mail, Phone, Calendar, Lock, CheckCircle2, AlertCircle, Save } from 'lucide-react';
+import { User as UserIcon, Mail, Phone, Calendar, Lock, CheckCircle2, AlertCircle, Save, Trash2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/client';
 
 export const ProfilePage: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, deleteAccount } = useAuth();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
@@ -20,6 +20,11 @@ export const ProfilePage: React.FC = () => {
   const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
   const [pwdError, setPwdError] = useState<string | null>(null);
   const [isChangingPwd, setIsChangingPwd] = useState(false);
+
+  // Delete Account Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -65,6 +70,17 @@ export const ProfilePage: React.FC = () => {
       setPwdError(err.message || 'Failed to change password');
     } finally {
       setIsChangingPwd(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount();
+    } catch (err: any) {
+      setDeleteError(err.message || 'Failed to delete account.');
+      setIsDeletingAccount(false);
     }
   };
 
@@ -183,7 +199,7 @@ export const ProfilePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isUpdatingProfile}
-                className="w-full py-3.5 bg-[#176B4D] hover:bg-[#12543c] text-white font-semibold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-4"
+                className="w-full py-3.5 bg-[#176B4D] hover:bg-[#12543c] text-white font-semibold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-4 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 {isUpdatingProfile ? 'Saving...' : 'Save Profile Changes'}
@@ -260,7 +276,7 @@ export const ProfilePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isChangingPwd}
-                className="w-full py-3.5 bg-[#18342A] hover:bg-[#0f221b] text-white font-semibold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-4"
+                className="w-full py-3.5 bg-[#18342A] hover:bg-[#0f221b] text-white font-semibold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-4 cursor-pointer"
               >
                 <Lock className="w-4 h-4" />
                 {isChangingPwd ? 'Updating...' : 'Update Password'}
@@ -268,7 +284,82 @@ export const ProfilePage: React.FC = () => {
             </form>
           </motion.div>
         </div>
+
+        {/* Danger Zone: Account Deletion */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-red-50/60 rounded-3xl p-8 border border-red-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-red-700 font-bold text-lg">
+              <Trash2 className="w-5 h-5" /> Danger Zone: Delete Account
+            </div>
+            <p className="text-xs text-red-600 font-medium max-w-xl">
+              Permanently delete your account and all associated personal data including saved vehicles, booking history, active passes, and wallet details.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer whitespace-nowrap"
+          >
+            Delete My Account
+          </button>
+        </motion.div>
       </div>
+
+      {/* Account Deletion Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-3xl p-8 max-w-md w-full border border-red-100 shadow-2xl space-y-6"
+          >
+            <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-extrabold text-[#18342A]">Delete Account Permanently?</h3>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                This permanently deletes your ParkEase account and eligible personal data. This action cannot be undone.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="p-4 rounded-2xl bg-red-50 text-red-700 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeletingAccount}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-2xl transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeletingAccount}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-2xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isDeletingAccount ? (
+                  <span>Deleting...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" /> Delete Permanently
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

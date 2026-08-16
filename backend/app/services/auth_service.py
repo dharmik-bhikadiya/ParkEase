@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from app.models.user import User, UserRole
 from app.models.wallet import Wallet
 from app.models.refresh_token import RefreshToken
+from app.models.parking import ParkingLocation
 from app.schemas.user import (
     UserCreate,
     UserLogin,
@@ -278,5 +279,48 @@ class AuthService:
 
         user.hashed_password = get_password_hash(pwd_in.new_password)
         db.commit()
+
+    @staticmethod
+    def delete_user_account(db: Session, target_user: User, requesting_user: User) -> None:
+        """
+        Safely delete a user account and all exclusive dependent data in an atomic transaction.
+        Enforces RBAC and guards protected Admin accounts.
+        """
+        # Authorization check
+        is_self_delete = (target_user.id == requesting_user.id)
+        is_admin = (requesting_user.role == UserRole.ADMIN)
+
+        if not (is_self_delete or is_admin):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to delete this user account."
+            )
+
+        # Protected Admin Guard: Prevent deleting the only remaining Admin account
+        if target_user.role == UserRole.ADMIN:
+            admin_count = db.query(User).filter(User.role == UserRole.ADMIN).count()
+            if admin_count <= 1:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot delete the sole system Administrator account."
+                )
+
+        # Parking Location Ownership Guard: Block deletion if user owns parking locations
+        owned_locations_count = db.query(ParkingLocation).filter(ParkingLocation.owner_id == target_user.id).count()
+        if owned_locations_count > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete user account that owns {owned_locations_count} parking location(s). Please transfer or remove parking location ownership first."
+            )
+
+        try:
+            db.delete(target_user)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to complete user account deletion: {str(e)}"
+            )
 
 auth_service = AuthService()

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Users, Search, RefreshCw } from 'lucide-react';
+import { Users, Search, RefreshCw, Trash2, AlertTriangle, AlertCircle } from 'lucide-react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { adminApi } from '../../api/adminApi';
+import { useAuth } from '../../context/AuthContext';
 import { User, UserRole } from '@parkease/shared';
 
 interface AdminUsersPageProps {
@@ -13,11 +14,17 @@ interface AdminUsersPageProps {
 export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ initialRoleFilter, titleOverride }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeRole = initialRoleFilter || searchParams.get('role') || 'ALL';
+  const { user: currentAdmin } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Deletion Modal State
+  const [selectedUserForDelete, setSelectedUserForDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -42,6 +49,21 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ initialRoleFilte
       setSearchParams(searchParams);
     } else {
       setSearchParams({ role });
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUserForDelete) return;
+    setIsDeleting(true);
+    setDeleteModalError(null);
+    try {
+      await adminApi.deleteUser(selectedUserForDelete.id);
+      setSelectedUserForDelete(null);
+      await fetchUsers();
+    } catch (err: any) {
+      setDeleteModalError(err.message || 'Failed to delete user account.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -149,42 +171,110 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ initialRoleFilte
                   <th className="py-3.5 px-6">Mobile</th>
                   <th className="py-3.5 px-6">Role</th>
                   <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">User ID</th>
+                  <th className="py-3.5 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="py-4 px-6 font-bold text-[#18342A]">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-[#E8F6EC] text-[#176B4D] font-black flex items-center justify-center text-xs">
-                          {u.fullName ? u.fullName.charAt(0).toUpperCase() : 'U'}
+                {filteredUsers.map((u) => {
+                  const isCurrentAdminSelf = u.id === currentAdmin?.id;
+
+                  return (
+                    <tr key={u.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="py-4 px-6 font-bold text-[#18342A]">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-[#E8F6EC] text-[#176B4D] font-black flex items-center justify-center text-xs">
+                            {u.fullName ? u.fullName.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                          <span>{u.fullName}</span>
                         </div>
-                        <span>{u.fullName}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-gray-600 font-medium">{u.email}</td>
-                    <td className="py-4 px-6 text-gray-600 font-medium">{u.phoneNumber || 'N/A'}</td>
-                    <td className="py-4 px-6">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getRoleBadge(u.role)}`}>
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        ACTIVE
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-right font-mono text-[10px] text-gray-400">
-                      {u.id.substring(0, 8)}...
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-4 px-6 text-gray-600 font-medium">{u.email}</td>
+                      <td className="py-4 px-6 text-gray-600 font-medium">{u.phoneNumber || 'N/A'}</td>
+                      <td className="py-4 px-6">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getRoleBadge(u.role)}`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          ACTIVE
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <button
+                          onClick={() => setSelectedUserForDelete(u)}
+                          disabled={isCurrentAdminSelf}
+                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                            isCurrentAdminSelf
+                              ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed'
+                              : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 shadow-2xs'
+                          }`}
+                          title={isCurrentAdminSelf ? 'Cannot delete your active Admin account here' : `Delete ${u.fullName}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Admin Delete User Confirmation Modal */}
+      {selectedUserForDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-red-100 shadow-2xl space-y-6">
+            <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-extrabold text-[#18342A]">Delete User Account?</h3>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Are you sure you want to permanently delete <strong className="text-red-700">{selectedUserForDelete.fullName}</strong> (<span className="font-mono">{selectedUserForDelete.email}</span>)?
+              </p>
+              <p className="text-[11px] text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-100">
+                All associated user data (vehicles, wallet, bookings, passes) will be removed permanently.
+              </p>
+            </div>
+
+            {deleteModalError && (
+              <div className="p-4 rounded-2xl bg-red-50 text-red-700 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {deleteModalError}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setSelectedUserForDelete(null);
+                  setDeleteModalError(null);
+                }}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-2xl transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-2xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <span>Deleting...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" /> Delete User
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

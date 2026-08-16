@@ -16,7 +16,7 @@ class Booking(Base, TimestampMixin):
     __tablename__ = "bookings"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     location_id: Mapped[str] = mapped_column(String(36), ForeignKey("parking_locations.id"), nullable=False)
     slot_id: Mapped[str] = mapped_column(String(36), ForeignKey("parking_slots.id"), nullable=False)
     vehicle_number: Mapped[str] = mapped_column(String(30), nullable=False)
@@ -35,4 +35,4 @@ class Booking(Base, TimestampMixin):
     location = relationship("ParkingLocation", back_populates="bookings")
     slot = relationship("ParkingSlot", back_populates="bookings")
     qr_passes = relationship("QrPass", back_populates="booking", cascade="all, delete-orphan")
-    payments = relationship("Payment", back_populates="booking")
+    payments = relationship("Payment", back_populates="booking", cascade="all, delete-orphan")

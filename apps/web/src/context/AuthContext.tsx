@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (data: RegisterRequest) => Promise<User>;
   loginWithGoogle: (idToken: string) => Promise<User>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   updateProfile: (data: UpdateProfileRequest) => Promise<User>;
   refreshUser: () => Promise<void>;
 }
@@ -119,6 +120,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAccount = async () => {
+    try {
+      await apiClient.delete('/users/me');
+    } finally {
+      logoutLocal();
+    }
+  };
+
   const updateProfile = async (data: UpdateProfileRequest): Promise<User> => {
     const res = await apiClient.patch('/users/me', {
       full_name: data.fullName,
@@ -147,6 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         loginWithGoogle,
         logout,
+        deleteAccount,
         updateProfile,
         refreshUser,
       }}

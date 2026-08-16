@@ -21,6 +21,7 @@ from app.schemas.wallet import TransactionResponse
 from app.schemas.response import APIResponse
 from app.repositories.parking_repository import parking_repository
 from app.repositories.user_repository import user_repository
+from app.services.auth_service import auth_service
 
 router = APIRouter()
 
@@ -72,6 +73,22 @@ def get_all_users_admin(
         message=f"Retrieved {len(users)} users",
         data=[UserResponse.model_validate(u) for u in users]
     )
+
+@router.delete("/users/{user_id}", response_model=APIResponse[None])
+def delete_user_admin(
+    user_id: str,
+    current_user: User = Depends(require_roles([UserRole.ADMIN])),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a user account and all exclusive dependent data (Admin action).
+    """
+    target_user = user_repository.get_by_id(db, user_id)
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User account not found")
+
+    auth_service.delete_user_account(db, target_user=target_user, requesting_user=current_user)
+    return APIResponse(message=f"User account '{target_user.email}' deleted successfully")
 
 @router.get("/bookings", response_model=APIResponse[List[BookingResponse]])
 def get_all_bookings_admin(
