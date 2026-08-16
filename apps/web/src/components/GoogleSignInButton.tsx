@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,6 +18,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isDevFallback, setIsDevFallback] = useState<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isInitializedRef = useRef<boolean>(false);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const handleCredentialResponse = async (response: any) => {
@@ -27,6 +30,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const gUser = await loginWithGoogle(response.credential);
       if (onSuccess) {
@@ -48,45 +52,86 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
   };
 
-  const handleGoogleAuth = async () => {
+  useEffect(() => {
+    if (!googleClientId) {
+      setIsDevFallback(true);
+      return;
+    }
+
+    let isMounted = true;
+    let pollInterval: any = null;
+
+    const setupGoogleGIS = () => {
+      const googleObj = (window as any).google;
+      if (!googleObj?.accounts?.id || !containerRef.current || !isMounted) return;
+
+      if (!isInitializedRef.current) {
+        try {
+          googleObj.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+          isInitializedRef.current = true;
+        } catch {
+          // Ignore redundant init error
+        }
+      }
+
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        googleObj.accounts.id.renderButton(containerRef.current, {
+          theme: 'outline',
+          size: 'large',
+          width: '100%',
+          text: text.toLowerCase().includes('sign up') ? 'signup_with' : 'signin_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+        });
+      }
+    };
+
+    const googleObj = (window as any).google;
+    if (googleObj?.accounts?.id) {
+      setupGoogleGIS();
+    } else {
+      pollInterval = setInterval(() => {
+        if ((window as any).google?.accounts?.id) {
+          clearInterval(pollInterval);
+          setupGoogleGIS();
+        }
+      }, 100);
+    }
+
+    return () => {
+      isMounted = false;
+      if (pollInterval) clearInterval(pollInterval);
+      try {
+        (window as any).google?.accounts?.id?.cancel();
+      } catch {
+        // Ignore cleanup error
+      }
+    };
+  }, [googleClientId, text]);
+
+  const handleDevMockAuth = async () => {
     setIsSubmitting(true);
     try {
-      const googleObj = (window as any).google;
-
-      if (googleClientId && googleObj?.accounts?.id) {
-        googleObj.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleCredentialResponse,
-          auto_select: false,
-        });
-
-        // Trigger Google Account Chooser overlay / prompt
-        googleObj.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-            const btnElem = document.getElementById('google-btn-hidden');
-            if (btnElem) {
-              googleObj.accounts.id.renderButton(
-                btnElem,
-                { theme: 'outline', size: 'large' }
-              );
-            }
-          }
-        });
+      const devMockToken = `mock_google_token:google_user_${Date.now()}@parkease.com:sub_google_${Math.floor(
+        Math.random() * 100000
+      )}:Google-User`;
+      const gUser = await loginWithGoogle(devMockToken);
+      if (onSuccess) {
+        onSuccess();
+      } else if (gUser.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else if (gUser.role === 'PARKING_OWNER') {
+        navigate('/owner/dashboard', { replace: true });
+      } else if (gUser.role === 'PARKING_STAFF' || gUser.role === 'STAFF') {
+        navigate('/staff/gate-scan', { replace: true });
       } else {
-        // Development mode fallback token when VITE_GOOGLE_CLIENT_ID is omitted
-        const devMockToken = `mock_google_token:google_user_${Date.now()}@parkease.com:sub_google_${Math.floor(Math.random() * 100000)}:Google-User`;
-        const gUser = await loginWithGoogle(devMockToken);
-        if (onSuccess) {
-          onSuccess();
-        } else if (gUser.role === 'ADMIN') {
-          navigate('/admin', { replace: true });
-        } else if (gUser.role === 'PARKING_OWNER') {
-          navigate('/owner/dashboard', { replace: true });
-        } else if (gUser.role === 'PARKING_STAFF' || gUser.role === 'STAFF') {
-          navigate('/staff/gate-scan', { replace: true });
-        } else {
-          navigate('/find-parking', { replace: true });
-        }
+        navigate('/find-parking', { replace: true });
       }
     } catch (err: any) {
       const errMsg = err?.message || 'Google sign-in failed.';
@@ -96,12 +141,11 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
   };
 
-  return (
-    <div>
-      <div id="google-btn-hidden" style={{ display: 'none' }}></div>
+  if (isDevFallback) {
+    return (
       <button
         type="button"
-        onClick={handleGoogleAuth}
+        onClick={handleDevMockAuth}
         disabled={isSubmitting}
         className={`w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 text-gray-700 font-semibold rounded-xl shadow-xs transition-all duration-200 disabled:opacity-60 cursor-pointer ${className}`}
       >
@@ -125,6 +169,12 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         </svg>
         <span>{isSubmitting ? 'Authenticating...' : text}</span>
       </button>
+    );
+  }
+
+  return (
+    <div className="w-full flex justify-center min-h-[44px]">
+      <div ref={containerRef} className="w-full min-h-[44px] flex justify-center" />
     </div>
   );
 };
