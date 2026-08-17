@@ -206,7 +206,12 @@ class EmailService:
                 logger.info(f"Mock email dispatched to {recipient_email} in local development mode")
                 return True
             else:
-                logger.error("SMTP credentials (SMTP_HOST and SMTP_USER) are not configured in production environment.")
+                logger.error(
+                    f"[SMTP DIAGNOSTIC] FAILED BEFORE CONNECT: SMTP credentials incomplete in production. "
+                    f"SMTP_HOST_PRESENT={bool(settings.SMTP_HOST and settings.SMTP_HOST.strip())}, "
+                    f"SMTP_USER_PRESENT={bool(settings.SMTP_USER and settings.SMTP_USER.strip())}, "
+                    f"SMTP_PASSWORD_PRESENT={bool(settings.SMTP_PASSWORD and settings.SMTP_PASSWORD.strip())}"
+                )
                 return False
 
         # Real SMTP Delivery Pipeline
@@ -224,6 +229,9 @@ class EmailService:
 
         from_name = settings.EMAILS_FROM_NAME.strip() if settings.EMAILS_FROM_NAME else "ParkEase"
 
+        logger.info(f"[SMTP DIAGNOSTIC] Step 0: PREPARE -> Host='{host}', Port={port}, User='{user}', From='{from_email}', TLS={settings.SMTP_TLS or port==587}")
+
+        current_step = "INIT"
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
@@ -242,49 +250,82 @@ class EmailService:
             msg.attach(MIMEText(html_body, "html"))
 
             if port == 465:
-                # SSL Direct Connection (Port 465)
+                current_step = "CONNECT"
                 with smtplib.SMTP_SSL(host, port, timeout=15) as server:
-                    server.ehlo()
-                    if user and password:
-                        server.login(user, password)
-                    server.send_message(msg)
-            else:
-                # Standard STARTTLS Sequence (Port 587 / Port 25)
-                with smtplib.SMTP(host, port, timeout=15) as server:
-                    server.ehlo()
-                    if settings.SMTP_TLS or port == 587:
-                        server.starttls()
-                        server.ehlo()
-                    if user and password:
-                        server.login(user, password)
-                    server.send_message(msg)
+                    logger.info(f"[SMTP DIAGNOSTIC] Step 1: CONNECT -> SUCCESS to {host}:{port}")
 
-            logger.info(f"SMTP verification email dispatched successfully to {recipient_email} via {host}:{port}")
-            return True
+                    current_step = "EHLO_1"
+                    server.ehlo()
+                    logger.info(f"[SMTP DIAGNOSTIC] Step 2: EHLO 1 -> SUCCESS")
+
+                    if user and password:
+                        current_step = "LOGIN"
+                        server.login(user, password)
+                        logger.info(f"[SMTP DIAGNOSTIC] Step 5: LOGIN -> SUCCESS for user '{user}'")
+                    else:
+                        logger.warning(f"[SMTP DIAGNOSTIC] Step 5: LOGIN -> SKIPPED (user or password empty)")
+
+                    current_step = "SEND"
+                    server.send_message(msg)
+                    logger.info(f"[SMTP DIAGNOSTIC] Step 6: SEND -> SUCCESS! Message accepted by SMTP server for recipient '{recipient_email}'")
+
+                    current_step = "QUIT"
+                    return True
+            else:
+                current_step = "CONNECT"
+                with smtplib.SMTP(host, port, timeout=15) as server:
+                    logger.info(f"[SMTP DIAGNOSTIC] Step 1: CONNECT -> SUCCESS to {host}:{port}")
+
+                    current_step = "EHLO_1"
+                    server.ehlo()
+                    logger.info(f"[SMTP DIAGNOSTIC] Step 2: EHLO 1 -> SUCCESS")
+
+                    if settings.SMTP_TLS or port == 587:
+                        current_step = "STARTTLS"
+                        server.starttls()
+                        logger.info(f"[SMTP DIAGNOSTIC] Step 3: STARTTLS -> SUCCESS")
+                        current_step = "EHLO_2"
+                        server.ehlo()
+                        logger.info(f"[SMTP DIAGNOSTIC] Step 4: EHLO 2 -> SUCCESS")
+
+                    if user and password:
+                        current_step = "LOGIN"
+                        server.login(user, password)
+                        logger.info(f"[SMTP DIAGNOSTIC] Step 5: LOGIN -> SUCCESS for user '{user}'")
+                    else:
+                        logger.warning(f"[SMTP DIAGNOSTIC] Step 5: LOGIN -> SKIPPED (user or password empty)")
+
+                    current_step = "SEND"
+                    server.send_message(msg)
+                    logger.info(f"[SMTP DIAGNOSTIC] Step 6: SEND -> SUCCESS! Message accepted by SMTP server for recipient '{recipient_email}'")
+
+                    current_step = "QUIT"
+                    return True
+
         except smtplib.SMTPAuthenticationError as auth_err:
             logger.error(
-                f"SMTP Authentication Failed on {host}:{port} for user {user}: "
+                f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPAuthenticationError on {host}:{port} for user '{user}': "
                 f"code={auth_err.smtp_code}, msg={auth_err.smtp_error}. "
-                f"SMTP authentication is failing because the configured Gmail App Password is invalid/revoked or credentials are wrong."
+                f"CRITICAL: Gmail App Password is invalid/revoked or credentials are wrong."
             )
             return False
         except smtplib.SMTPConnectError as conn_err:
-            logger.error(f"SMTP Connection Failed to {host}:{port}: {conn_err}")
+            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPConnectError to {host}:{port}: {conn_err}")
             return False
         except smtplib.SMTPServerDisconnected as disc_err:
-            logger.error(f"SMTP Server Disconnected unexpectedly from {host}:{port}: {disc_err}")
+            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPServerDisconnected from {host}:{port}: {disc_err}")
             return False
         except smtplib.SMTPSenderRefused as send_err:
-            logger.error(f"SMTP Sender Refused on {host}:{port}: {send_err}")
+            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPSenderRefused on {host}:{port}: {send_err}")
             return False
         except smtplib.SMTPRecipientsRefused as recip_err:
-            logger.error(f"SMTP Recipient Refused on {host}:{port}: {recip_err}")
+            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPRecipientRefused on {host}:{port}: {recip_err}")
             return False
         except smtplib.SMTPException as smtp_err:
-            logger.error(f"SMTP Exception occurred on {host}:{port}: {type(smtp_err).__name__} - {smtp_err}")
+            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPException on {host}:{port}: {type(smtp_err).__name__} - {smtp_err}")
             return False
         except (TimeoutError, OSError, Exception) as e:
-            logger.error(f"Unexpected network/SMTP failure on {host}:{port}: {type(e).__name__} - {str(e)}")
+            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: {type(e).__name__} on {host}:{port} - {str(e)}")
             return False
 
 email_service = EmailService()
