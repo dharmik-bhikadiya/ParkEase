@@ -3,14 +3,11 @@ import { motion } from 'framer-motion';
 import {
   User as UserIcon,
   Calendar,
-  Lock,
   CheckCircle2,
   AlertCircle,
   Save,
   Trash2,
   AlertTriangle,
-  Eye,
-  EyeOff,
   Camera,
   Car,
   Bike,
@@ -20,7 +17,6 @@ import {
   Edit3,
   Wallet as WalletIcon,
   Clock,
-  ShieldCheck,
   ArrowRight,
   ExternalLink,
 } from 'lucide-react';
@@ -32,6 +28,7 @@ import { walletApi } from '../../api/walletApi';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Link } from 'react-router-dom';
+import { PasswordSecurityCard } from './PasswordSecurityCard';
 
 export const DriverProfileView: React.FC = () => {
   const { user, updateProfile, deleteAccount } = useAuth();
@@ -67,17 +64,6 @@ export const DriverProfileView: React.FC = () => {
 
   // Wallet State
   const [wallet, setWallet] = useState<WalletType | null>(null);
-
-  // Password Change State
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
-  const [showNewPwd, setShowNewPwd] = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
-  const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
-  const [pwdError, setPwdError] = useState<string | null>(null);
-  const [isChangingPwd, setIsChangingPwd] = useState(false);
 
   // Account Deletion Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -218,34 +204,6 @@ export const DriverProfileView: React.FC = () => {
       await loadDriverData();
     } catch (err: any) {
       alert(err.message || 'Failed to delete vehicle');
-    }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPwdSuccess(null);
-    setPwdError(null);
-
-    if (newPassword !== confirmPassword) {
-      setPwdError('New passwords do not match');
-      return;
-    }
-
-    setIsChangingPwd(true);
-    try {
-      await apiClient.patch('/users/me/password', {
-        current_password: currentPassword,
-        new_password: newPassword,
-        confirm_password: confirmPassword,
-      });
-      setPwdSuccess('Password changed successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      setPwdError(err.message || 'Failed to change password');
-    } finally {
-      setIsChangingPwd(false);
     }
   };
 
@@ -580,113 +538,7 @@ export const DriverProfileView: React.FC = () => {
           </Card>
 
           {/* Section E: Security & Credentials */}
-          <Card className="p-6 bg-white border border-[#E8F6EC] rounded-3xl shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-              <Lock className="w-5 h-5 text-[#176B4D]" />
-              <h3 className="text-sm font-extrabold text-[#18342A]">Security & Credentials</h3>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#F7F9F5] border border-gray-200 flex items-center justify-between text-xs font-semibold">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Google Account Status</span>
-              </div>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-                Connected
-              </span>
-            </div>
-
-            {pwdSuccess && (
-              <div className="p-3 rounded-xl bg-[#E8F6EC] text-[#176B4D] text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" /> {pwdSuccess}
-              </div>
-            )}
-            {pwdError && (
-              <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-bold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {pwdError}
-              </div>
-            )}
-
-            <form onSubmit={handleChangePassword} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">
-                  Current Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPwd ? 'text' : 'password'}
-                    required
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#72C98B] font-semibold text-gray-800 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPwd(!showCurrentPwd)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                  >
-                    {showCurrentPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">
-                  New Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPwd ? 'text' : 'password'}
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#72C98B] font-semibold text-gray-800 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPwd(!showNewPwd)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                  >
-                    {showNewPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPwd ? 'text' : 'password'}
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#72C98B] font-semibold text-gray-800 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPwd(!showConfirmPwd)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isChangingPwd}
-                className="w-full py-2.5 bg-[#18342A] hover:bg-[#0f221b] text-white font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                {isChangingPwd ? 'Updating...' : 'Update Password'}
-              </button>
-            </form>
-          </Card>
+          <PasswordSecurityCard />
 
           {/* Section F: Danger Zone */}
           <Card className="p-6 bg-rose-50/60 border border-rose-200 rounded-3xl space-y-3">

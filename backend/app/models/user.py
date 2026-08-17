@@ -32,3 +32,8 @@ class User(Base, TimestampMixin):
     vehicles = relationship("UserVehicle", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def has_password(self) -> bool:
+        return self.hashed_password is not None
+

@@ -189,3 +189,68 @@ def test_google_auth_account_linking(client):
     assert data["user"]["email"] == "existinguser@parkease.com"
     assert data["user"]["google_id"] == "sub_88888"
     assert data["user"]["auth_provider"] == "google+email"
+
+def test_google_user_create_password_flow(client):
+    # 1. Sign up via Google (no password set initially)
+    google_res = client.post(
+        "/api/v1/auth/google",
+        json={"id_token": "mock_google_token:googlepass@parkease.com:sub_77777:Google-Pass-User"},
+    )
+    assert google_res.status_code == 200
+    token = google_res.json()["data"]["access_token"]
+    user_data = google_res.json()["data"]["user"]
+    assert user_data["has_password"] is False
+    assert user_data["auth_provider"] == "google"
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 2. Try to change password before creating one (should fail)
+    change_res = client.patch(
+        "/api/v1/users/me/password",
+        json={"current_password": "OldPassword123!", "new_password": "NewPassword123!", "confirm_password": "NewPassword123!"},
+        headers=headers,
+    )
+    assert change_res.status_code == 400
+    assert "User does not have a password set" in change_res.json()["detail"]
+
+    # 3. Create password
+    create_res = client.post(
+        "/api/v1/users/me/create-password",
+        json={"new_password": "CreatedPassword123!", "confirm_password": "CreatedPassword123!"},
+        headers=headers,
+    )
+    assert create_res.status_code == 200
+    assert create_res.json()["message"] == "Password created successfully"
+
+    # 4. Verify profile updated
+    profile_res = client.get("/api/v1/users/me", headers=headers)
+    assert profile_res.status_code == 200
+    updated_user = profile_res.json()["data"]
+    assert updated_user["has_password"] is True
+    assert updated_user["auth_provider"] == "google+email"
+
+    # 5. Verify email + password login now works
+    login_res = client.post(
+        "/api/v1/auth/login",
+        json={"email_or_phone": "googlepass@parkease.com", "password": "CreatedPassword123!"},
+    )
+    assert login_res.status_code == 200
+    assert "access_token" in login_res.json()["data"]
+
+    # 6. Verify duplicate create-password call fails
+    dup_res = client.post(
+        "/api/v1/users/me/create-password",
+        json={"new_password": "AnotherPassword123!", "confirm_password": "AnotherPassword123!"},
+        headers=headers,
+    )
+    assert dup_res.status_code == 400
+    assert "User already has a password set" in dup_res.json()["detail"]
+
+    # 7. Verify Google login still works
+    google_res2 = client.post(
+        "/api/v1/auth/google",
+        json={"id_token": "mock_google_token:googlepass@parkease.com:sub_77777:Google-Pass-User"},
+    )
+    assert google_res2.status_code == 200
+    assert google_res2.json()["data"]["user"]["has_password"] is True
+

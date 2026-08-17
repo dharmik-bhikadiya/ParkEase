@@ -12,6 +12,7 @@ from app.schemas.user import (
     UserLogin,
     UserUpdate,
     PasswordChange,
+    CreatePasswordRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
     TokenRefreshRequest,
@@ -258,6 +259,12 @@ class AuthService:
 
     @staticmethod
     def change_password(db: Session, user: User, pwd_in: PasswordChange) -> None:
+        if not user.hashed_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User does not have a password set. Use create password instead."
+            )
+
         if not verify_password(pwd_in.current_password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -279,6 +286,33 @@ class AuthService:
 
         user.hashed_password = get_password_hash(pwd_in.new_password)
         db.commit()
+
+    @staticmethod
+    def create_password(db: Session, user: User, pwd_in: CreatePasswordRequest) -> None:
+        if user.hashed_password is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User already has a password set. Use change password instead."
+            )
+
+        if pwd_in.new_password != pwd_in.confirm_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password and confirm password do not match"
+            )
+
+        is_strong, err = validate_strong_password(pwd_in.new_password)
+        if not is_strong:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=err
+            )
+
+        user.hashed_password = get_password_hash(pwd_in.new_password)
+        if user.auth_provider == "google":
+            user.auth_provider = "google+email"
+        db.commit()
+
 
     @staticmethod
     def delete_user_account(db: Session, target_user: User, requesting_user: User) -> None:

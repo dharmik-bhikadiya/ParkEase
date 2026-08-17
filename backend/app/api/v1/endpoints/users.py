@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.api.deps import get_current_active_user, require_roles
 from app.models.user import User, UserRole
-from app.schemas.user import UserResponse, UserUpdate, PasswordChange
+from app.schemas.user import UserResponse, UserUpdate, PasswordChange, CreatePasswordRequest
 from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleResponse
 from app.schemas.response import APIResponse
 from app.services.auth_service import auth_service
@@ -50,6 +50,19 @@ def change_my_password(
     """
     auth_service.change_password(db, current_user, pwd_in)
     return APIResponse(message="Password changed successfully")
+
+@router.post("/me/create-password", response_model=APIResponse[None])
+def create_my_password(
+    pwd_in: CreatePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Create a password for authenticated Google user without an existing password.
+    """
+    auth_service.create_password(db, current_user, pwd_in)
+    return APIResponse(message="Password created successfully")
+
 
 # Vehicle Management APIs (User Ownership Protected)
 @router.get("/me/vehicles", response_model=APIResponse[List[VehicleResponse]])

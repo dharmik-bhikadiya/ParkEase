@@ -5,22 +5,19 @@ import {
   Building2,
   Users,
   BarChart3,
-  Lock,
   CheckCircle2,
   AlertCircle,
   Save,
-  Eye,
-  EyeOff,
   Camera,
   Layers,
   ArrowRight,
   TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { apiClient } from '../../api/client';
 import { adminApi, AdminStats } from '../../api/adminApi';
 import { Card } from '../ui/Card';
 import { Link } from 'react-router-dom';
+import { PasswordSecurityCard } from './PasswordSecurityCard';
 
 export const AdminProfileView: React.FC = () => {
   const { user, updateProfile } = useAuth();
@@ -33,20 +30,8 @@ export const AdminProfileView: React.FC = () => {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
-  // Platform Metrics State
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
-
-  // Password State
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
-  const [showNewPwd, setShowNewPwd] = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
-  const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
-  const [pwdError, setPwdError] = useState<string | null>(null);
-  const [isChangingPwd, setIsChangingPwd] = useState(false);
 
   useEffect(() => {
     loadAdminStats();
@@ -92,34 +77,6 @@ export const AdminProfileView: React.FC = () => {
       setProfileError(err.message || 'Failed to update admin profile');
     } finally {
       setIsUpdatingProfile(false);
-    }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPwdSuccess(null);
-    setPwdError(null);
-
-    if (newPassword !== confirmPassword) {
-      setPwdError('New passwords do not match');
-      return;
-    }
-
-    setIsChangingPwd(true);
-    try {
-      await apiClient.patch('/users/me/password', {
-        current_password: currentPassword,
-        new_password: newPassword,
-        confirm_password: confirmPassword,
-      });
-      setPwdSuccess('Password changed successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      setPwdError(err.message || 'Failed to change password');
-    } finally {
-      setIsChangingPwd(false);
     }
   };
 
@@ -386,103 +343,7 @@ export const AdminProfileView: React.FC = () => {
 
         {/* Right Column (6 cols): Security & Protected Admin Guard */}
         <div className="lg:col-span-6 space-y-6">
-          <Card className="p-6 bg-white border border-[#E8F6EC] rounded-3xl shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-              <Lock className="w-5 h-5 text-[#176B4D]" />
-              <h3 className="text-sm font-extrabold text-[#18342A]">Password & Security Credentials</h3>
-            </div>
-
-            {pwdSuccess && (
-              <div className="p-3 rounded-xl bg-[#E8F6EC] text-[#176B4D] text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" /> {pwdSuccess}
-              </div>
-            )}
-            {pwdError && (
-              <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-bold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {pwdError}
-              </div>
-            )}
-
-            <form onSubmit={handleChangePassword} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">
-                  Current Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPwd ? 'text' : 'password'}
-                    required
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#72C98B] font-semibold text-gray-800 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPwd(!showCurrentPwd)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                  >
-                    {showCurrentPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">
-                  New Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPwd ? 'text' : 'password'}
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#72C98B] font-semibold text-gray-800 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPwd(!showNewPwd)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                  >
-                    {showNewPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPwd ? 'text' : 'password'}
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#72C98B] font-semibold text-gray-800 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPwd(!showConfirmPwd)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isChangingPwd}
-                className="w-full py-2.5 bg-[#18342A] hover:bg-[#0f221b] text-white font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                {isChangingPwd ? 'Updating...' : 'Update Admin Password'}
-              </button>
-            </form>
-          </Card>
+          <PasswordSecurityCard />
 
           {/* Section E: Protected Admin Account Guard */}
           <Card className="p-6 bg-emerald-50/60 border border-emerald-200 rounded-3xl space-y-3">

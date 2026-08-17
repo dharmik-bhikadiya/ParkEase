@@ -27,6 +27,10 @@ class PasswordChange(BaseModel):
     new_password: str
     confirm_password: str
 
+class CreatePasswordRequest(BaseModel):
+    new_password: str
+    confirm_password: str
+
 class ForgotPasswordRequest(BaseModel):
     email_or_phone: str
 
@@ -47,6 +51,7 @@ class UserResponse(UserBase):
     avatar_url: Optional[str] = None
     google_id: Optional[str] = None
     auth_provider: Optional[str] = "email"
+    has_password: bool = False
     created_at: datetime
     updated_at: datetime
 

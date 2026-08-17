@@ -18,8 +18,13 @@ export interface User {
   phoneNumber?: string;
   role: UserRole;
   googleId?: string;
+  google_id?: string;
   authProvider?: string;
+  auth_provider?: string;
+  hasPassword?: boolean;
+  has_password?: boolean;
   avatarUrl?: string;
+  avatar_url?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -104,6 +109,11 @@ export interface UpdateProfileRequest {
 
 export interface ChangePasswordRequest {
   currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface CreatePasswordRequest {
   newPassword: string;
   confirmPassword: string;
 }
