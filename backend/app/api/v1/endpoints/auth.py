@@ -18,6 +18,8 @@ from app.schemas.response import APIResponse
 from app.services.auth_service import auth_service
 from app.services.google_auth_service import google_auth_service
 from app.services.otp_service import otp_service
+from app.core.security import create_access_token, create_refresh_token
+from app.models.refresh_token import RefreshToken
 
 router = APIRouter()
 
@@ -112,15 +114,32 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
     auth_service.reset_password(db, request)
     return APIResponse(message="Password reset successfully. You can now login with your new password.")
 
-@router.post("/verify-email", response_model=APIResponse[UserResponse])
+@router.post("/verify-email", response_model=APIResponse[Token])
 def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db)):
     """
-    Verify user account using the 6-digit OTP sent to their email.
+    Verify user account using the 6-digit OTP sent to their email and issue active access tokens.
     """
     user = otp_service.verify_otp(db, email=request.email, raw_otp=request.otp)
+    
+    # Issue active JWT tokens upon successful email verification
+    access_token = create_access_token(subject=user.id, role=user.role.value)
+    raw_refresh, refresh_hash, expires_at = create_refresh_token(subject=user.id)
+
+    db.add(RefreshToken(
+        user_id=user.id,
+        token_hash=refresh_hash,
+        expires_at=expires_at,
+    ))
+    db.commit()
+
     return APIResponse(
-        message="Email verified successfully. Your ParkEase account is ready.",
-        data=UserResponse.model_validate(user)
+        message="Email verified successfully. Your ParkEase account is active and ready.",
+        data=Token(
+            access_token=access_token,
+            refresh_token=raw_refresh,
+            token_type="bearer",
+            user=UserResponse.model_validate(user)
+        )
     )
 
 @router.post("/resend-verification", response_model=APIResponse[None])

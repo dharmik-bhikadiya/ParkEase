@@ -81,14 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const tokenData = res.data.data;
-    const accessToken = tokenData.access_token || tokenData.accessToken;
-    const refreshToken = tokenData.refresh_token || tokenData.refreshToken;
-
-    if (accessToken) localStorage.setItem('parkease_token', accessToken);
-    if (refreshToken) localStorage.setItem('parkease_refresh_token', refreshToken);
-
-    setToken(accessToken);
-    setUser(tokenData.user);
+    // Registration creates unverified account; do NOT auto-login until OTP verified
     return tokenData.user;
   };
 
@@ -146,9 +139,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       otp,
     });
-    const verifiedUser = res.data.data;
-    setUser(verifiedUser);
-    return verifiedUser;
+    const tokenData = res.data.data;
+    const accessToken = tokenData.access_token || tokenData.accessToken;
+    const refreshToken = tokenData.refresh_token || tokenData.refreshToken;
+
+    if (accessToken) localStorage.setItem('parkease_token', accessToken);
+    if (refreshToken) localStorage.setItem('parkease_refresh_token', refreshToken);
+
+    if (accessToken) setToken(accessToken);
+    setUser(tokenData.user);
+    return tokenData.user;
   };
 
   const resendVerification = async (email: string): Promise<void> => {

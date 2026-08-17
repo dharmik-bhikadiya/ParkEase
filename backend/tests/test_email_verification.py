@@ -82,7 +82,7 @@ def test_verify_email_success(client, db_session):
         json={"email": email, "otp": raw_code},
     )
     assert verify_res.status_code == 200
-    assert verify_res.json()["data"]["is_verified"] is True
+    assert verify_res.json()["data"]["user"]["is_verified"] is True
 
     # Confirm OTP record deleted from DB
     remaining_otp = db_session.query(EmailVerificationOTP).filter(

@@ -24,6 +24,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  if (!user.is_verified && !user.isVerified) {
+    return <Navigate to={`/verify-email?email=${encodeURIComponent(user.email)}`} replace />;
+  }
+
   if (allowedRoles && allowedRoles.length > 0) {
     const hasRole = allowedRoles.includes(user.role as UserRole);
     if (!hasRole) {
