@@ -22,8 +22,7 @@ def create_db_engine():
             max_overflow=20,
             connect_args={"connect_timeout": conn_timeout}
         )
-        with pg_engine.connect() as conn:
-            pass
+        Base.metadata.create_all(bind=pg_engine)
         return pg_engine
     except Exception:
         # SQLite dev fallback

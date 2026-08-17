@@ -81,8 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const tokenData = res.data.data;
-    // Registration creates unverified account; do NOT auto-login until OTP verified
-    return tokenData.user;
+    // Registration creates unverified pending account; do NOT auto-login until OTP verified
+    return (tokenData?.user || tokenData) as User;
   };
 
   const loginWithGoogle = async (idToken: string): Promise<User> => {
