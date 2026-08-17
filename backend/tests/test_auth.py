@@ -48,7 +48,9 @@ def test_user_registration_password_mismatch(client):
     assert response.status_code == 400
     assert "do not match" in response.json()["detail"]
 
-def test_user_login_and_profile(client):
+from app.models.user import User
+
+def test_user_login_and_profile(client, db_session):
     # 1. Register user
     client.post(
         "/api/v1/auth/register",
@@ -61,6 +63,11 @@ def test_user_login_and_profile(client):
             "role": "PARKING_OWNER",
         },
     )
+
+    # Verify user email so login can proceed
+    user = db_session.query(User).filter(User.email == "owner@parkease.com").first()
+    user.is_verified = True
+    db_session.commit()
 
     # 2. Login using email
     login_res = client.post(

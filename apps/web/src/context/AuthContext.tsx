@@ -9,6 +9,8 @@ interface AuthContextType {
   login: (credentials: LoginRequest) => Promise<User>;
   register: (data: RegisterRequest) => Promise<User>;
   loginWithGoogle: (idToken: string) => Promise<User>;
+  verifyEmail: (email: string, otp: string) => Promise<User>;
+  resendVerification: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   updateProfile: (data: UpdateProfileRequest) => Promise<User>;
@@ -139,6 +141,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return updated;
   };
 
+  const verifyEmail = async (email: string, otp: string): Promise<User> => {
+    const res = await apiClient.post('/auth/verify-email', {
+      email,
+      otp,
+    });
+    const verifiedUser = res.data.data;
+    setUser(verifiedUser);
+    return verifiedUser;
+  };
+
+  const resendVerification = async (email: string): Promise<void> => {
+    await apiClient.post('/auth/resend-verification', {
+      email,
+    });
+  };
+
   const refreshUser = async () => {
     if (!token) return;
     const res = await apiClient.get('/users/me');
@@ -156,6 +174,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         loginWithGoogle,
+        verifyEmail,
+        resendVerification,
         logout,
         deleteAccount,
         updateProfile,

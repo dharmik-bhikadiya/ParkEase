@@ -26,6 +26,8 @@ export interface User {
   avatarUrl?: string;
   avatar_url?: string;
   isActive: boolean;
+  isVerified?: boolean;
+  is_verified?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -82,6 +84,15 @@ export interface RegisterRequest {
   password: string;
   confirmPassword: string;
   role?: UserRole;
+}
+
+export interface VerifyEmailRequest {
+  email: string;
+  otp: string;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
 }
 
 export interface TokenResponse {

@@ -112,6 +112,7 @@ class GoogleAuthService:
                     )
                 # Link Google Identity safely
                 existing_user.google_id = google_sub
+                existing_user.is_verified = True
                 if existing_user.auth_provider == "email":
                     existing_user.auth_provider = "google+email"
                 if picture and not existing_user.avatar_url:
@@ -128,6 +129,7 @@ class GoogleAuthService:
                     auth_provider="google",
                     avatar_url=picture,
                     role=UserRole.USER,
+                    is_verified=True,
                     hashed_password=None,
                 )
                 db.add(user)

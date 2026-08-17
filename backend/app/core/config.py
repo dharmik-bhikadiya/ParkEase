@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Locate root monorepo directory dynamically
@@ -60,6 +60,15 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
     PAYMENT_PROVIDER: str = "SANDBOX"
+
+    # SMTP / Email Configuration
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    EMAILS_FROM_EMAIL: str = "noreply@parkease.com"
+    EMAILS_FROM_NAME: str = "ParkEase"
+    SMTP_TLS: bool = True
 
     model_config = SettingsConfigDict(
         env_file=(str(ROOT_ENV_FILE), str(LOCAL_ENV_FILE), ".env"),

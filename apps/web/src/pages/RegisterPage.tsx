@@ -48,7 +48,7 @@ export const RegisterPage: React.FC = () => {
         confirmPassword,
         role,
       });
-      navigate('/profile');
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please verify input data.');
     } finally {

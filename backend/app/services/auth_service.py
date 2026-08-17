@@ -27,6 +27,7 @@ from app.core.security import (
     validate_phone_number,
 )
 from app.repositories.user_repository import user_repository
+from app.services.otp_service import otp_service
 
 def _ensure_utc(dt: datetime) -> datetime:
     if dt.tzinfo is None:
@@ -83,6 +84,7 @@ class AuthService:
             full_name=user_in.full_name.strip(),
             phone_number=user_in.phone_number.strip() if user_in.phone_number else None,
             role=user_in.role or UserRole.USER,
+            is_verified=False,
         )
         db.add(new_user)
         db.flush()
@@ -90,6 +92,9 @@ class AuthService:
         # Initialize User Wallet automatically
         user_wallet = Wallet(user_id=new_user.id, balance=0.0)
         db.add(user_wallet)
+
+        # Generate and dispatch 6-digit OTP verification email
+        otp_service.create_and_send_otp(db, new_user)
 
         # Generate tokens
         access_token = create_access_token(subject=new_user.id, role=new_user.role.value)
@@ -123,6 +128,14 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been deactivated or blocked. Please contact support."
+            )
+
+        if not user.is_verified:
+            # Re-trigger OTP verification email if user attempts login while unverified
+            otp_service.create_and_send_otp(db, user)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your email address is not verified. A verification code has been sent to your email."
             )
 
         access_token = create_access_token(subject=user.id, role=user.role.value)

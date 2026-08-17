@@ -62,9 +62,22 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-3 text-sm">
-            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-            <span>{error}</span>
+          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 flex flex-col gap-2 text-sm">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+            {error.toLowerCase().includes('not verified') && (
+              <div className="mt-1 pl-8">
+                <Link
+                  to={`/verify-email?email=${encodeURIComponent(emailOrPhone.includes('@') ? emailOrPhone : '')}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#176B4D] text-white text-xs font-semibold rounded-xl hover:bg-[#12543c] transition-all"
+                >
+                  Verify Email Now
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

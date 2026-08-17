@@ -45,9 +45,17 @@ class TokenRefreshRequest(BaseModel):
 class GoogleAuthRequest(BaseModel):
     id_token: str
 
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6)
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
 class UserResponse(UserBase):
     id: str
     is_active: bool
+    is_verified: bool = False
     avatar_url: Optional[str] = None
     google_id: Optional[str] = None
     auth_provider: Optional[str] = "email"

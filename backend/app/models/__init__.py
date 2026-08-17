@@ -16,6 +16,7 @@ from app.models.wallet import Wallet, WalletTransaction, TransactionType
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.qr import QrPass, QrType
 from app.models.notification import Notification
+from app.models.email_verification import EmailVerificationOTP
 
 __all__ = [
     "Base",
@@ -42,4 +43,5 @@ __all__ = [
     "QrPass",
     "QrType",
     "Notification",
+    "EmailVerificationOTP",
 ]

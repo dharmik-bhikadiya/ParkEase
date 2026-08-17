@@ -11,10 +11,13 @@ from app.schemas.user import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     TokenRefreshRequest,
+    VerifyEmailRequest,
+    ResendVerificationRequest,
 )
 from app.schemas.response import APIResponse
 from app.services.auth_service import auth_service
 from app.services.google_auth_service import google_auth_service
+from app.services.otp_service import otp_service
 
 router = APIRouter()
 
@@ -108,3 +111,24 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
     """
     auth_service.reset_password(db, request)
     return APIResponse(message="Password reset successfully. You can now login with your new password.")
+
+@router.post("/verify-email", response_model=APIResponse[UserResponse])
+def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db)):
+    """
+    Verify user account using the 6-digit OTP sent to their email.
+    """
+    user = otp_service.verify_otp(db, email=request.email, raw_otp=request.otp)
+    return APIResponse(
+        message="Email verified successfully. Your ParkEase account is ready.",
+        data=UserResponse.model_validate(user)
+    )
+
+@router.post("/resend-verification", response_model=APIResponse[None])
+def resend_verification(request: ResendVerificationRequest, db: Session = Depends(get_db)):
+    """
+    Resend verification OTP email enforcing 60-second cooldown period.
+    """
+    otp_service.resend_otp(db, email=request.email)
+    return APIResponse(
+        message="A new 6-digit verification code has been dispatched to your email address."
+    )
