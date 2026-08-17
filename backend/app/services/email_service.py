@@ -213,8 +213,15 @@ class EmailService:
         host = settings.SMTP_HOST.strip() if settings.SMTP_HOST else ""
         port = settings.SMTP_PORT
         user = settings.SMTP_USER.strip() if settings.SMTP_USER else ""
-        password = settings.SMTP_PASSWORD if settings.SMTP_PASSWORD else ""
-        from_email = settings.EMAILS_FROM_EMAIL.strip() if settings.EMAILS_FROM_EMAIL else "noreply@parkease.com"
+        password = settings.SMTP_PASSWORD.strip().strip('"').strip("'") if settings.SMTP_PASSWORD else ""
+        
+        # Sender Email Fallback: Gmail SMTP requires From email to match authenticated user or authorized alias
+        raw_from = settings.EMAILS_FROM_EMAIL.strip() if settings.EMAILS_FROM_EMAIL else ""
+        if not raw_from or raw_from == "noreply@parkease.com":
+            from_email = user if ("gmail" in host.lower() and user) else (raw_from or user or "noreply@parkease.com")
+        else:
+            from_email = raw_from
+
         from_name = settings.EMAILS_FROM_NAME.strip() if settings.EMAILS_FROM_NAME else "ParkEase"
 
         try:
@@ -252,19 +259,32 @@ class EmailService:
                         server.login(user, password)
                     server.send_message(msg)
 
-            logger.info(f"SMTP verification email dispatched successfully to {recipient_email}")
+            logger.info(f"SMTP verification email dispatched successfully to {recipient_email} via {host}:{port}")
             return True
         except smtplib.SMTPAuthenticationError as auth_err:
-            logger.error(f"SMTP Authentication Failed for user {user}: {auth_err.smtp_code} {auth_err.smtp_error}")
+            logger.error(
+                f"SMTP Authentication Failed on {host}:{port} for user {user}: "
+                f"code={auth_err.smtp_code}, msg={auth_err.smtp_error}. "
+                f"SMTP authentication is failing because the configured Gmail App Password is invalid/revoked or credentials are wrong."
+            )
             return False
         except smtplib.SMTPConnectError as conn_err:
             logger.error(f"SMTP Connection Failed to {host}:{port}: {conn_err}")
             return False
-        except smtplib.SMTPException as smtp_err:
-            logger.error(f"SMTP Exception occurred during email dispatch to {recipient_email}: {smtp_err}")
+        except smtplib.SMTPServerDisconnected as disc_err:
+            logger.error(f"SMTP Server Disconnected unexpectedly from {host}:{port}: {disc_err}")
             return False
-        except Exception as e:
-            logger.error(f"Unexpected email dispatch failure to {recipient_email}: {type(e).__name__} - {str(e)}")
+        except smtplib.SMTPSenderRefused as send_err:
+            logger.error(f"SMTP Sender Refused on {host}:{port}: {send_err}")
+            return False
+        except smtplib.SMTPRecipientsRefused as recip_err:
+            logger.error(f"SMTP Recipient Refused on {host}:{port}: {recip_err}")
+            return False
+        except smtplib.SMTPException as smtp_err:
+            logger.error(f"SMTP Exception occurred on {host}:{port}: {type(smtp_err).__name__} - {smtp_err}")
+            return False
+        except (TimeoutError, OSError, Exception) as e:
+            logger.error(f"Unexpected network/SMTP failure on {host}:{port}: {type(e).__name__} - {str(e)}")
             return False
 
 email_service = EmailService()

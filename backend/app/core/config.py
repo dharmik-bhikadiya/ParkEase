@@ -75,11 +75,12 @@ class Settings(BaseSettings):
     @property
     def is_smtp_configured(self) -> bool:
         """
-        Returns True if valid SMTP Host and SMTP User credentials are provided.
+        Returns True if valid SMTP Host, SMTP User, and SMTP Password credentials are provided.
         """
         return bool(
             self.SMTP_HOST and self.SMTP_HOST.strip() and
-            self.SMTP_USER and self.SMTP_USER.strip()
+            self.SMTP_USER and self.SMTP_USER.strip() and
+            self.SMTP_PASSWORD and self.SMTP_PASSWORD.strip()
         )
 
     model_config = SettingsConfigDict(
