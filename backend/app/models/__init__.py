@@ -17,6 +17,7 @@ from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.qr import QrPass, QrType
 from app.models.notification import Notification
 from app.models.email_verification import EmailVerificationOTP
+from app.models.pending_registration import PendingRegistration
 
 __all__ = [
     "Base",
@@ -44,4 +45,5 @@ __all__ = [
     "QrType",
     "Notification",
     "EmailVerificationOTP",
+    "PendingRegistration",
 ]

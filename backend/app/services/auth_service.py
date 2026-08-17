@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 
 from app.models.user import User, UserRole
 from app.models.wallet import Wallet
+from app.models.pending_registration import PendingRegistration
 from app.models.refresh_token import RefreshToken
 from app.models.parking import ParkingLocation
 from app.schemas.user import (
@@ -78,47 +79,42 @@ class AuthService:
                 )
 
         hashed_password = get_password_hash(user_in.password)
-        new_user = User(
-            email=user_in.email.lower().strip(),
+        role_str = user_in.role.value if user_in.role else "USER"
+
+        # Create or refresh pending registration (NO User row inserted into users table yet!)
+        otp_service.create_and_send_pending_otp(
+            db=db,
+            email=user_in.email,
+            full_name=user_in.full_name,
+            phone_number=user_in.phone_number,
             hashed_password=hashed_password,
-            full_name=user_in.full_name.strip(),
-            phone_number=user_in.phone_number.strip() if user_in.phone_number else None,
-            role=user_in.role or UserRole.USER,
-            is_verified=False,
+            role=role_str,
         )
-        db.add(new_user)
-        db.flush()
-
-        # Initialize User Wallet automatically
-        user_wallet = Wallet(user_id=new_user.id, balance=0.0)
-        db.add(user_wallet)
-
-        # Generate and dispatch 6-digit OTP verification email
-        otp_service.create_and_send_otp(db, new_user)
-
-        # Generate tokens
-        access_token = create_access_token(subject=new_user.id, role=new_user.role.value)
-        raw_refresh, refresh_hash, expires_at = create_refresh_token(subject=new_user.id)
-
-        db.add(RefreshToken(
-            user_id=new_user.id,
-            token_hash=refresh_hash,
-            expires_at=expires_at,
-        ))
-        db.commit()
-        db.refresh(new_user)
 
         return {
-            "access_token": access_token,
-            "refresh_token": raw_refresh,
-            "token_type": "bearer",
-            "user": new_user,
+            "message": "Verification code sent to your email. Please verify your email to complete account creation.",
+            "email": user_in.email.lower().strip(),
+            "is_verified": False,
         }
 
     @staticmethod
     def authenticate_user(db: Session, credentials: UserLogin) -> dict:
         user = user_repository.get_by_email_or_phone(db, credentials.email_or_phone.strip())
-        if not user or not verify_password(credentials.password, user.hashed_password):
+        if not user:
+            clean_email = credentials.email_or_phone.strip().lower()
+            pending = db.query(PendingRegistration).filter(PendingRegistration.email == clean_email).first()
+            if pending:
+                if verify_password(credentials.password, pending.password_hash):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Your email address is not verified. Please check your email for the verification code."
+                    )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+
+        if not verify_password(credentials.password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
@@ -131,11 +127,9 @@ class AuthService:
             )
 
         if not user.is_verified:
-            # Re-trigger OTP verification email if user attempts login while unverified
-            otp_service.create_and_send_otp(db, user)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your email address is not verified. A verification code has been sent to your email."
+                detail="Your email address is not verified. Please check your email for the verification code."
             )
 
         access_token = create_access_token(subject=user.id, role=user.role.value)

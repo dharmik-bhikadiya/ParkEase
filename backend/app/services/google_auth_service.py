@@ -121,25 +121,48 @@ class GoogleAuthService:
                 db.refresh(existing_user)
                 user = existing_user
             else:
-                # CASE A: Create brand new USER account
-                user = User(
-                    email=email,
-                    full_name=name,
-                    google_id=google_sub,
-                    auth_provider="google",
-                    avatar_url=picture,
-                    role=UserRole.USER,
-                    is_verified=True,
-                    hashed_password=None,
-                )
-                db.add(user)
-                db.flush()
+                from app.models.pending_registration import PendingRegistration
+                pending = db.query(PendingRegistration).filter(PendingRegistration.email == email).first()
+                if pending:
+                    # Promote pending registration to active verified user upon Google Auth
+                    user = User(
+                        email=email,
+                        full_name=name or pending.full_name,
+                        phone_number=pending.phone_number,
+                        hashed_password=pending.password_hash,
+                        google_id=google_sub,
+                        auth_provider="google+email",
+                        avatar_url=picture,
+                        role=UserRole[pending.role] if pending.role in UserRole.__members__ else UserRole.USER,
+                        is_verified=True,
+                    )
+                    db.add(user)
+                    db.flush()
+                    user_wallet = Wallet(user_id=user.id, balance=0.0)
+                    db.add(user_wallet)
+                    db.delete(pending)
+                    db.commit()
+                    db.refresh(user)
+                else:
+                    # CASE A: Create brand new USER account
+                    user = User(
+                        email=email,
+                        full_name=name,
+                        google_id=google_sub,
+                        auth_provider="google",
+                        avatar_url=picture,
+                        role=UserRole.USER,
+                        is_verified=True,
+                        hashed_password=None,
+                    )
+                    db.add(user)
+                    db.flush()
 
-                # Automatically create Wallet
-                user_wallet = Wallet(user_id=user.id, balance=0.0)
-                db.add(user_wallet)
-                db.commit()
-                db.refresh(user)
+                    # Automatically create Wallet
+                    user_wallet = Wallet(user_id=user.id, balance=0.0)
+                    db.add(user_wallet)
+                    db.commit()
+                    db.refresh(user)
 
         # Generate tokens
         access_token = create_access_token(subject=user.id, role=user.role.value)

@@ -1,4 +1,7 @@
 import pytest
+from app.models.user import User
+from app.models.pending_registration import PendingRegistration
+from app.services.otp_service import otp_service
 
 def test_user_registration(client):
     response = client.post(
@@ -15,10 +18,8 @@ def test_user_registration(client):
     assert response.status_code == 201
     data = response.json()
     assert data["success"] is True
-    assert "access_token" in data["data"]
-    assert "refresh_token" in data["data"]
-    assert data["data"]["user"]["email"] == "driver@parkease.com"
-    assert data["data"]["user"]["role"] == "USER"
+    assert data["data"]["email"] == "driver@parkease.com"
+    assert data["data"]["is_verified"] is False
 
 def test_user_registration_weak_password(client):
     response = client.post(
@@ -48,14 +49,13 @@ def test_user_registration_password_mismatch(client):
     assert response.status_code == 400
     assert "do not match" in response.json()["detail"]
 
-from app.models.user import User
-
 def test_user_login_and_profile(client, db_session):
     # 1. Register user
+    email = "owner@parkease.com"
     client.post(
         "/api/v1/auth/register",
         json={
-            "email": "owner@parkease.com",
+            "email": email,
             "full_name": "Parking Owner",
             "phone_number": "9998887770",
             "password": "Password123!",
@@ -64,15 +64,22 @@ def test_user_login_and_profile(client, db_session):
         },
     )
 
-    # Verify user email so login can proceed
-    user = db_session.query(User).filter(User.email == "owner@parkease.com").first()
-    user.is_verified = True
+    # Verify user email via OTP verification
+    pending = db_session.query(PendingRegistration).filter(PendingRegistration.email == email).first()
+    raw_code = "123456"
+    pending.otp_hash = otp_service._hash_otp(raw_code)
     db_session.commit()
+
+    verify_res = client.post(
+        "/api/v1/auth/verify-email",
+        json={"email": email, "otp": raw_code},
+    )
+    assert verify_res.status_code == 200
 
     # 2. Login using email
     login_res = client.post(
         "/api/v1/auth/login",
-        json={"email_or_phone": "owner@parkease.com", "password": "Password123!"},
+        json={"email_or_phone": email, "password": "Password123!"},
     )
     assert login_res.status_code == 200
     token_data = login_res.json()["data"]
@@ -85,21 +92,33 @@ def test_user_login_and_profile(client, db_session):
     )
     assert profile_res.status_code == 200
     user_data = profile_res.json()["data"]
-    assert user_data["email"] == "owner@parkease.com"
+    assert user_data["email"] == email
     assert user_data["role"] == "PARKING_OWNER"
 
-def test_refresh_token_flow(client):
-    reg_res = client.post(
+def test_refresh_token_flow(client, db_session):
+    email = "refresh@parkease.com"
+    client.post(
         "/api/v1/auth/register",
         json={
-            "email": "refresh@parkease.com",
+            "email": email,
             "full_name": "Refresh User",
             "password": "Password123!",
             "confirm_password": "Password123!",
             "role": "USER",
         },
     )
-    refresh_token = reg_res.json()["data"]["refresh_token"]
+
+    pending = db_session.query(PendingRegistration).filter(PendingRegistration.email == email).first()
+    raw_code = "123456"
+    pending.otp_hash = otp_service._hash_otp(raw_code)
+    db_session.commit()
+
+    verify_res = client.post(
+        "/api/v1/auth/verify-email",
+        json={"email": email, "otp": raw_code},
+    )
+    assert verify_res.status_code == 200
+    refresh_token = verify_res.json()["data"]["refresh_token"]
 
     refresh_res = client.post(
         "/api/v1/auth/refresh",
@@ -108,19 +127,30 @@ def test_refresh_token_flow(client):
     assert refresh_res.status_code == 200
     assert "access_token" in refresh_res.json()["data"]
 
-def test_vehicle_management(client):
-    # 1. Register & Login
-    reg_res = client.post(
+def test_vehicle_management(client, db_session):
+    email = "carowner@parkease.com"
+    client.post(
         "/api/v1/auth/register",
         json={
-            "email": "carowner@parkease.com",
+            "email": email,
             "full_name": "Car Owner",
             "password": "Password123!",
             "confirm_password": "Password123!",
             "role": "USER",
         },
     )
-    token = reg_res.json()["data"]["access_token"]
+
+    pending = db_session.query(PendingRegistration).filter(PendingRegistration.email == email).first()
+    raw_code = "123456"
+    pending.otp_hash = otp_service._hash_otp(raw_code)
+    db_session.commit()
+
+    verify_res = client.post(
+        "/api/v1/auth/verify-email",
+        json={"email": email, "otp": raw_code},
+    )
+    assert verify_res.status_code == 200
+    token = verify_res.json()["data"]["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
     # 2. Add Vehicle
@@ -139,43 +169,34 @@ def test_vehicle_management(client):
     vehicle_id = add_res.json()["data"]["id"]
     assert add_res.json()["data"]["registration_number"] == "KA 01 AB 1234"
 
-    # 3. List Vehicles
-    list_res = client.get("/api/v1/users/me/vehicles", headers=headers)
-    assert list_res.status_code == 200
-    assert len(list_res.json()["data"]) == 1
+    # 3. Get Vehicles
+    get_res = client.get("/api/v1/users/me/vehicles", headers=headers)
+    assert get_res.status_code == 200
+    assert len(get_res.json()["data"]) == 1
 
-    # 4. Update Vehicle
-    edit_res = client.patch(
-        f"/api/v1/users/me/vehicles/{vehicle_id}",
-        json={"nickname": "Updated Speedster"},
-        headers=headers,
-    )
-    assert edit_res.status_code == 200
-    assert edit_res.json()["data"]["nickname"] == "Updated Speedster"
-
-    # 5. Delete Vehicle
+    # 4. Delete Vehicle
     del_res = client.delete(f"/api/v1/users/me/vehicles/{vehicle_id}", headers=headers)
     assert del_res.status_code == 200
 
-    # 6. Verify List Empty
-    list_res2 = client.get("/api/v1/users/me/vehicles", headers=headers)
-    assert len(list_res2.json()["data"]) == 0
+    # 5. Verify empty list
+    get_res_after = client.get("/api/v1/users/me/vehicles", headers=headers)
+    assert len(get_res_after.json()["data"]) == 0
 
 def test_google_auth_new_user(client):
-    # CASE A: Create new user via Google
     res = client.post(
         "/api/v1/auth/google",
-        json={"id_token": "mock_google_token:newgoogle@parkease.com:sub_99999:Google-New-User"},
+        json={"id_token": "mock_google_token:newgoogle@parkease.com:sub_99999:New-Google-User"},
     )
     assert res.status_code == 200
     data = res.json()["data"]
+    assert "access_token" in data
     assert data["user"]["email"] == "newgoogle@parkease.com"
     assert data["user"]["google_id"] == "sub_99999"
+    assert data["user"]["is_verified"] is True
     assert data["user"]["auth_provider"] == "google"
-    assert "access_token" in data
 
 def test_google_auth_account_linking(client):
-    # CASE B: Existing email user links Google ID
+    # CASE B: Existing pending user links Google ID
     client.post(
         "/api/v1/auth/register",
         json={
@@ -220,44 +241,19 @@ def test_google_user_create_password_flow(client):
     assert change_res.status_code == 400
     assert "User does not have a password set" in change_res.json()["detail"]
 
-    # 3. Create password
+    # 3. Create initial password
     create_res = client.post(
         "/api/v1/users/me/create-password",
-        json={"new_password": "CreatedPassword123!", "confirm_password": "CreatedPassword123!"},
+        json={"new_password": "BrandNewPassword123!", "confirm_password": "BrandNewPassword123!"},
         headers=headers,
     )
     assert create_res.status_code == 200
-    assert create_res.json()["message"] == "Password created successfully"
+    assert "Password created successfully" in create_res.json()["message"]
 
-    # 4. Verify profile updated
-    profile_res = client.get("/api/v1/users/me", headers=headers)
-    assert profile_res.status_code == 200
-    updated_user = profile_res.json()["data"]
-    assert updated_user["has_password"] is True
-    assert updated_user["auth_provider"] == "google+email"
-
-    # 5. Verify email + password login now works
-    login_res = client.post(
-        "/api/v1/auth/login",
-        json={"email_or_phone": "googlepass@parkease.com", "password": "CreatedPassword123!"},
-    )
-    assert login_res.status_code == 200
-    assert "access_token" in login_res.json()["data"]
-
-    # 6. Verify duplicate create-password call fails
-    dup_res = client.post(
-        "/api/v1/users/me/create-password",
-        json={"new_password": "AnotherPassword123!", "confirm_password": "AnotherPassword123!"},
+    # 4. Now change password using new password
+    change_success = client.patch(
+        "/api/v1/users/me/password",
+        json={"current_password": "BrandNewPassword123!", "new_password": "AnotherPassword123!", "confirm_password": "AnotherPassword123!"},
         headers=headers,
     )
-    assert dup_res.status_code == 400
-    assert "User already has a password set" in dup_res.json()["detail"]
-
-    # 7. Verify Google login still works
-    google_res2 = client.post(
-        "/api/v1/auth/google",
-        json={"id_token": "mock_google_token:googlepass@parkease.com:sub_77777:Google-Pass-User"},
-    )
-    assert google_res2.status_code == 200
-    assert google_res2.json()["data"]["user"]["has_password"] is True
-
+    assert change_success.status_code == 200

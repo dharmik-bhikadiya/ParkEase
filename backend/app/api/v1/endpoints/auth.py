@@ -23,20 +23,19 @@ from app.models.refresh_token import RefreshToken
 
 router = APIRouter()
 
-@router.post("/register", response_model=APIResponse[Token], status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=APIResponse[dict], status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     """
-    Register a new ParkEase user with email, mobile, and password validation.
+    Register a new ParkEase user. Stores pending registration and sends OTP email.
+    User record in users table is created ONLY AFTER OTP verification.
     """
     result = auth_service.register_user(db, user_in)
     return APIResponse(
-        message="User registered successfully",
-        data=Token(
-            access_token=result["access_token"],
-            refresh_token=result["refresh_token"],
-            token_type=result["token_type"],
-            user=UserResponse.model_validate(result["user"])
-        )
+        message=result["message"],
+        data={
+            "email": result["email"],
+            "is_verified": False
+        }
     )
 
 @router.post("/login", response_model=APIResponse[Token])
@@ -117,20 +116,12 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
 @router.post("/verify-email", response_model=APIResponse[Token])
 def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db)):
     """
-    Verify user account using the 6-digit OTP sent to their email and issue active access tokens.
+    Verify user account using the 6-digit OTP code sent to their email.
+    Creates user record in main users table ONLY upon successful OTP verification.
     """
-    user = otp_service.verify_otp(db, email=request.email, raw_otp=request.otp)
-    
-    # Issue active JWT tokens upon successful email verification
-    access_token = create_access_token(subject=user.id, role=user.role.value)
-    raw_refresh, refresh_hash, expires_at = create_refresh_token(subject=user.id)
-
-    db.add(RefreshToken(
-        user_id=user.id,
-        token_hash=refresh_hash,
-        expires_at=expires_at,
-    ))
-    db.commit()
+    user, access_token, raw_refresh = otp_service.verify_otp_and_create_user(
+        db, email=request.email, raw_otp=request.otp
+    )
 
     return APIResponse(
         message="Email verified successfully. Your ParkEase account is active and ready.",
@@ -147,7 +138,7 @@ def resend_verification(request: ResendVerificationRequest, db: Session = Depend
     """
     Resend verification OTP email enforcing 60-second cooldown period.
     """
-    otp_service.resend_otp(db, email=request.email)
+    otp_service.resend_pending_otp(db, email=request.email)
     return APIResponse(
         message="A new 6-digit verification code has been dispatched to your email address."
     )
