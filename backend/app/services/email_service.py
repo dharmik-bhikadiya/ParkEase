@@ -188,27 +188,39 @@ class EmailService:
     def send_otp_email(cls, recipient_email: str, recipient_name: str, otp_code: str) -> bool:
         """
         Dispatches a branded ParkEase HTML verification email.
-        Uses real SMTP if configured; otherwise logs formatted email details cleanly for development.
+        Uses real SMTP (Gmail/Port 587/STARTTLS) when configured.
+        Falls back to local mock logger ONLY when ENVIRONMENT is 'development' and SMTP is not configured.
         """
         html_body = cls._generate_otp_html(recipient_name, otp_code)
         subject = "Verify your ParkEase account"
 
-        # Development / Testing Fallback Logger (No SMTP configured)
-        if not settings.SMTP_HOST or not settings.SMTP_USER:
-            print(f"\n==================================================")
-            print(f"[PARKEASE BRANDED EMAIL DISPATCH - MOCK DEV MODE]")
-            print(f"To: {recipient_name} <{recipient_email}>")
-            print(f"Subject: {subject}")
-            print(f"OTP Code: [{otp_code}] (Expires in 10 mins)")
-            print(f"==================================================\n")
-            logger.info(f"Mock email dispatched to {recipient_email} with OTP code")
-            return True
+        # Check if SMTP is configured
+        if not settings.is_smtp_configured:
+            if settings.ENVIRONMENT.lower() == "development":
+                print(f"\n==================================================")
+                print(f"[PARKEASE BRANDED EMAIL DISPATCH - MOCK DEV MODE]")
+                print(f"To: {recipient_name} <{recipient_email}>")
+                print(f"Subject: {subject}")
+                print(f"OTP Code: [{otp_code}] (Expires in 10 mins)")
+                print(f"==================================================\n")
+                logger.info(f"Mock email dispatched to {recipient_email} in local development mode")
+                return True
+            else:
+                logger.error("SMTP credentials (SMTP_HOST and SMTP_USER) are not configured in production environment.")
+                return False
 
-        # Production SMTP Dispatch
+        # Real SMTP Delivery Pipeline
+        host = settings.SMTP_HOST.strip() if settings.SMTP_HOST else ""
+        port = settings.SMTP_PORT
+        user = settings.SMTP_USER.strip() if settings.SMTP_USER else ""
+        password = settings.SMTP_PASSWORD if settings.SMTP_PASSWORD else ""
+        from_email = settings.EMAILS_FROM_EMAIL.strip() if settings.EMAILS_FROM_EMAIL else "noreply@parkease.com"
+        from_name = settings.EMAILS_FROM_NAME.strip() if settings.EMAILS_FROM_NAME else "ParkEase"
+
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = f"{settings.EMAILS_FROM_NAME} <{settings.EMAILS_FROM_EMAIL}>"
+            msg["From"] = f"{from_name} <{from_email}>"
             msg["To"] = recipient_email
 
             text_fallback = (
@@ -222,19 +234,37 @@ class EmailService:
             msg.attach(MIMEText(text_fallback, "plain"))
             msg.attach(MIMEText(html_body, "html"))
 
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-                if settings.SMTP_TLS:
-                    server.starttls()
-                if settings.SMTP_USER and settings.SMTP_PASSWORD:
-                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.sendmail(settings.EMAILS_FROM_EMAIL, [recipient_email], msg.as_string())
-            
-            logger.info(f"SMTP Email successfully sent to {recipient_email}")
+            if port == 465:
+                # SSL Direct Connection (Port 465)
+                with smtplib.SMTP_SSL(host, port, timeout=15) as server:
+                    server.ehlo()
+                    if user and password:
+                        server.login(user, password)
+                    server.send_message(msg)
+            else:
+                # Standard STARTTLS Sequence (Port 587 / Port 25)
+                with smtplib.SMTP(host, port, timeout=15) as server:
+                    server.ehlo()
+                    if settings.SMTP_TLS or port == 587:
+                        server.starttls()
+                        server.ehlo()
+                    if user and password:
+                        server.login(user, password)
+                    server.send_message(msg)
+
+            logger.info(f"SMTP verification email dispatched successfully to {recipient_email}")
             return True
+        except smtplib.SMTPAuthenticationError as auth_err:
+            logger.error(f"SMTP Authentication Failed for user {user}: {auth_err.smtp_code} {auth_err.smtp_error}")
+            return False
+        except smtplib.SMTPConnectError as conn_err:
+            logger.error(f"SMTP Connection Failed to {host}:{port}: {conn_err}")
+            return False
+        except smtplib.SMTPException as smtp_err:
+            logger.error(f"SMTP Exception occurred during email dispatch to {recipient_email}: {smtp_err}")
+            return False
         except Exception as e:
-            logger.error(f"Failed to send SMTP email to {recipient_email}: {str(e)}")
-            # Fallback to dev log so system never crashes if SMTP has network issues
-            print(f"[EMAIL FALLBACK LOGGER] SMTP dispatch failed: {str(e)}. OTP for {recipient_email}: [{otp_code}]")
+            logger.error(f"Unexpected email dispatch failure to {recipient_email}: {type(e).__name__} - {str(e)}")
             return False
 
 email_service = EmailService()

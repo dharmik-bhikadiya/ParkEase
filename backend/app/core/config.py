@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from pydantic import Field, AliasChoices
+
 # Locate root monorepo directory dynamically
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ROOT_DIR = BASE_DIR.parent
@@ -61,14 +63,24 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_SECRET: str = ""
     PAYMENT_PROVIDER: str = "SANDBOX"
 
-    # SMTP / Email Configuration
-    SMTP_HOST: Optional[str] = None
-    SMTP_PORT: int = 587
-    SMTP_USER: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    EMAILS_FROM_EMAIL: str = "noreply@parkease.com"
-    EMAILS_FROM_NAME: str = "ParkEase"
-    SMTP_TLS: bool = True
+    # SMTP / Email Configuration (Supports standard aliases used across Render / Cloud providers)
+    SMTP_HOST: Optional[str] = Field(default=None, validation_alias=AliasChoices("SMTP_HOST", "MAIL_SERVER"))
+    SMTP_PORT: int = Field(default=587, validation_alias=AliasChoices("SMTP_PORT", "MAIL_PORT"))
+    SMTP_USER: Optional[str] = Field(default=None, validation_alias=AliasChoices("SMTP_USER", "SMTP_USERNAME", "MAIL_USERNAME"))
+    SMTP_PASSWORD: Optional[str] = Field(default=None, validation_alias=AliasChoices("SMTP_PASSWORD", "SMTP_PASS", "MAIL_PASSWORD"))
+    EMAILS_FROM_EMAIL: str = Field(default="noreply@parkease.com", validation_alias=AliasChoices("EMAILS_FROM_EMAIL", "SMTP_FROM_EMAIL", "SMTP_FROM", "MAIL_FROM"))
+    EMAILS_FROM_NAME: str = Field(default="ParkEase", validation_alias=AliasChoices("EMAILS_FROM_NAME", "SMTP_FROM_NAME", "MAIL_FROM_NAME"))
+    SMTP_TLS: bool = Field(default=True, validation_alias=AliasChoices("SMTP_TLS", "SMTP_USE_TLS", "MAIL_USE_TLS"))
+
+    @property
+    def is_smtp_configured(self) -> bool:
+        """
+        Returns True if valid SMTP Host and SMTP User credentials are provided.
+        """
+        return bool(
+            self.SMTP_HOST and self.SMTP_HOST.strip() and
+            self.SMTP_USER and self.SMTP_USER.strip()
+        )
 
     model_config = SettingsConfigDict(
         env_file=(str(ROOT_ENV_FILE), str(LOCAL_ENV_FILE), ".env"),

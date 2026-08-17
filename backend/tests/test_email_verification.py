@@ -1,8 +1,12 @@
 import pytest
+import smtplib
+from unittest.mock import patch, MagicMock
 from datetime import datetime, timezone, timedelta
 from app.models.user import User
 from app.models.email_verification import EmailVerificationOTP
 from app.services.otp_service import otp_service
+from app.services.email_service import email_service
+from app.core.config import Settings
 
 def test_registration_creates_unverified_user_and_otp(client, db_session):
     response = client.post(
@@ -238,3 +242,60 @@ def test_google_auth_user_is_auto_verified(client):
     user_data = google_res.json()["data"]["user"]
     assert user_data["email"] == "google_verified@parkease.com"
     assert user_data["is_verified"] is True
+
+# ==============================================================================
+# SMTP PRODUCTION PIPELINE & DIAGNOSTIC TESTS
+# ==============================================================================
+
+def test_smtp_alias_choices_detection():
+    # Test alternative alias detection (SMTP_USERNAME, SMTP_FROM_EMAIL, etc.)
+    settings_alias = Settings(
+        SMTP_HOST="smtp.gmail.com",
+        SMTP_USERNAME="alias_user@gmail.com",
+        SMTP_PASS="secret_password",
+        SMTP_FROM_EMAIL="custom_from@parkease.com",
+        SMTP_FROM_NAME="ParkEase Live",
+    )
+    assert settings_alias.SMTP_HOST == "smtp.gmail.com"
+    assert settings_alias.SMTP_USER == "alias_user@gmail.com"
+    assert settings_alias.SMTP_PASSWORD == "secret_password"
+    assert settings_alias.EMAILS_FROM_EMAIL == "custom_from@parkease.com"
+    assert settings_alias.EMAILS_FROM_NAME == "ParkEase Live"
+    assert settings_alias.is_smtp_configured is True
+
+def test_smtp_send_success_mock_smtp():
+    with patch("smtplib.SMTP") as mock_smtp_cls:
+        mock_server = MagicMock()
+        mock_smtp_cls.return_value.__enter__.return_value = mock_server
+
+        with patch("app.core.config.settings.SMTP_HOST", "smtp.gmail.com"), \
+             patch("app.core.config.settings.SMTP_USER", "test@gmail.com"), \
+             patch("app.core.config.settings.SMTP_PASSWORD", "app_password_123"):
+
+            result = email_service.send_otp_email("recipient@domain.com", "Test User", "123456")
+            assert result is True
+            mock_server.ehlo.assert_called()
+            mock_server.starttls.assert_called()
+            mock_server.login.assert_called_with("test@gmail.com", "app_password_123")
+            mock_server.send_message.assert_called_once()
+
+def test_smtp_auth_failure_handling():
+    with patch("smtplib.SMTP") as mock_smtp_cls:
+        mock_server = MagicMock()
+        mock_server.login.side_effect = smtplib.SMTPAuthenticationError(535, b"5.7.8 Username and Password not accepted.")
+        mock_smtp_cls.return_value.__enter__.return_value = mock_server
+
+        with patch("app.core.config.settings.SMTP_HOST", "smtp.gmail.com"), \
+             patch("app.core.config.settings.SMTP_USER", "invalid@gmail.com"), \
+             patch("app.core.config.settings.SMTP_PASSWORD", "wrong_pass"):
+
+            result = email_service.send_otp_email("recipient@domain.com", "Test User", "123456")
+            assert result is False
+
+def test_production_missing_smtp_returns_false_and_no_mock():
+    with patch("app.core.config.settings.SMTP_HOST", None), \
+         patch("app.core.config.settings.SMTP_USER", None), \
+         patch("app.core.config.settings.ENVIRONMENT", "production"):
+
+        result = email_service.send_otp_email("user@domain.com", "Prod User", "999888")
+        assert result is False

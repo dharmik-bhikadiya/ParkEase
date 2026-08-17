@@ -62,11 +62,17 @@ class OTPService:
         db.commit()
 
         # Send branded HTML verification email
-        email_service.send_otp_email(
+        sent = email_service.send_otp_email(
             recipient_email=user.email,
             recipient_name=user.full_name,
             otp_code=raw_otp
         )
+
+        if not sent:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to send verification email. Please try again or check server email settings."
+            )
 
     @classmethod
     def resend_otp(cls, db: Session, email: str) -> None:
