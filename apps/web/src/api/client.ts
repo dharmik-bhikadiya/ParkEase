@@ -27,7 +27,7 @@ apiClient.interceptors.response.use(
     let status = error.response?.status || 500;
 
     if (!error.response || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
-      // Network Error or server offline
+      // Real Network Error, CORS preflight failure, or server offline
       message = 'Unable to connect to ParkEase right now. Please check your connection and try again.';
       status = 0;
     } else if (error.response.data?.detail) {
@@ -38,6 +38,15 @@ apiClient.interceptors.response.use(
         message = detail.map((d: any) => d.msg || d.message).join(', ');
       } else {
         message = JSON.stringify(detail);
+      }
+    } else if (error.response.data?.error?.details) {
+      const details = error.response.data.error.details;
+      if (typeof details === 'string') {
+        message = details;
+      } else if (Array.isArray(details)) {
+        message = details.map((d: any) => d.msg || d.message).join(', ');
+      } else {
+        message = JSON.stringify(details);
       }
     } else if (error.response.data?.message) {
       message = error.response.data.message;

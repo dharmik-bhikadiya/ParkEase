@@ -18,11 +18,15 @@ def create_db_engine():
         pg_engine = create_engine(
             db_url,
             pool_pre_ping=True,
+            pool_recycle=300,
             pool_size=10,
             max_overflow=20,
             connect_args={"connect_timeout": conn_timeout}
         )
-        Base.metadata.create_all(bind=pg_engine)
+        try:
+            Base.metadata.create_all(bind=pg_engine)
+        except Exception:
+            pass
         return pg_engine
     except Exception:
         # SQLite dev fallback
