@@ -43,7 +43,10 @@ export default function MobileRegisterScreen() {
         confirmPassword,
         role,
       });
-      router.replace('/(app)/profile');
+      router.push({
+        pathname: '/(auth)/verify-email',
+        params: { email: email.trim() },
+      });
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {

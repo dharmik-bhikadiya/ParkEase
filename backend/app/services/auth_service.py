@@ -27,6 +27,7 @@ from app.core.security import (
     validate_strong_password,
     validate_phone_number,
 )
+from app.core.config import settings
 from app.repositories.user_repository import user_repository
 from app.services.otp_service import otp_service
 
@@ -82,7 +83,7 @@ class AuthService:
         role_str = user_in.role.value if user_in.role else "USER"
 
         # Create or refresh pending registration (NO User row inserted into users table yet!)
-        otp_service.create_and_send_pending_otp(
+        raw_otp = otp_service.create_and_send_pending_otp(
             db=db,
             email=user_in.email,
             full_name=user_in.full_name,
@@ -91,11 +92,14 @@ class AuthService:
             role=role_str,
         )
 
-        return {
+        res_data = {
             "message": "Verification code sent to your email. Please verify your email to complete account creation.",
             "email": user_in.email.lower().strip(),
             "is_verified": False,
         }
+        if settings.ENVIRONMENT.lower() == "development":
+            res_data["dev_otp"] = raw_otp
+        return res_data
 
     @staticmethod
     def authenticate_user(db: Session, credentials: UserLogin) -> dict:

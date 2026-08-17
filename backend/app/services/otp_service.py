@@ -92,6 +92,8 @@ class OTPService:
                 detail="Unable to send verification email. Please try again or check server email settings."
             )
 
+        return raw_otp
+
     @classmethod
     def resend_pending_otp(cls, db: Session, email: str) -> None:
         """

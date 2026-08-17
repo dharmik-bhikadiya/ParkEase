@@ -8,6 +8,8 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<User>;
   register: (data: RegisterRequest) => Promise<User>;
+  verifyEmail: (email: string, otp: string) => Promise<User>;
+  resendVerification: (email: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<User>;
   logout: () => Promise<void>;
   updateProfile: (data: UpdateProfileRequest) => Promise<User>;
@@ -80,6 +82,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }),
     });
 
+    return (res.data?.user || res.data) as User;
+  };
+
+  const verifyEmail = async (email: string, otp: string): Promise<User> => {
+    const res = await mobileApiFetch('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        otp,
+      }),
+    });
+
     const tokenData = res.data;
     const accessToken = tokenData.access_token || tokenData.accessToken;
     const refreshToken = tokenData.refresh_token || tokenData.refreshToken;
@@ -89,6 +103,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUser(tokenData.user);
     return tokenData.user;
+  };
+
+  const resendVerification = async (email: string): Promise<void> => {
+    await mobileApiFetch('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+      }),
+    });
   };
 
   const loginWithGoogle = async (idToken: string): Promise<User> => {
@@ -150,6 +173,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         register,
+        verifyEmail,
+        resendVerification,
         loginWithGoogle,
         logout,
         updateProfile,
