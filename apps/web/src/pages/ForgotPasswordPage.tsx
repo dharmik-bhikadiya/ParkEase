@@ -43,7 +43,7 @@ export const ForgotPasswordPage: React.FC = () => {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <Link to="/" className="inline-block transition-transform hover:scale-105" title="ParkEase Home">
-              <ParkEaseAnimatedLogo size={54} variant="symbol" />
+              <ParkEaseAnimatedLogo size={52} variant="full" />
             </Link>
           </div>
           <h1 className="text-3xl font-bold text-[#18342A] mb-2 tracking-tight">Forgot Password</h1>

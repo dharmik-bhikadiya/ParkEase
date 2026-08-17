@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import { mobileTheme } from '../constants/theme';
 
 interface MobileLogoProps {
@@ -9,8 +9,8 @@ interface MobileLogoProps {
 }
 
 export const MobileLogo: React.FC<MobileLogoProps> = ({
-  size = 56,
-  showSubtitle = true,
+  size = 52,
+  showSubtitle: _showSubtitle = true,
   align = 'center',
 }) => {
   return (
@@ -18,18 +18,16 @@ export const MobileLogo: React.FC<MobileLogoProps> = ({
       <View style={styles.logoRow}>
         <Image
           source={require('../../assets/icon.png')}
-          style={{ width: size, height: size, borderRadius: size * 0.2 }}
+          style={{ width: size, height: size * 1.3 }}
           resizeMode="contain"
-          accessibilityLabel="ParkEase Logo"
+          accessibilityLabel="ParkEase Emblem"
         />
-        <View style={styles.textContainer}>
-          <Text style={styles.brandTitle}>
-            Park<Text style={styles.brandAccent}>Ease</Text>
-          </Text>
-          {showSubtitle && (
-            <Text style={styles.brandSubtitle}>PARK SMART • MOVE EASY</Text>
-          )}
-        </View>
+        <Image
+          source={require('../../assets/parkease-text-logo.png')}
+          style={{ height: size * 0.85, width: size * 2.8 }}
+          resizeMode="contain"
+          accessibilityLabel="ParkEase Typography"
+        />
       </View>
     </View>
   );
@@ -42,26 +40,7 @@ const styles = StyleSheet.create({
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-  textContainer: {
-    justifyContent: 'center',
-  },
-  brandTitle: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: mobileTheme.colors.textDark,
-    letterSpacing: -0.5,
-  },
-  brandAccent: {
-    color: mobileTheme.colors.darkGreen,
-  },
-  brandSubtitle: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: mobileTheme.colors.primaryGreen,
-    letterSpacing: 1.5,
-    marginTop: 2,
+    gap: 10,
   },
 });
 

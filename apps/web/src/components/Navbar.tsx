@@ -31,10 +31,7 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <ParkEaseAnimatedLogo size={42} variant="symbol" />
-          <span className="text-2xl font-black text-[#18342A] tracking-tight">
-            Park<span className="text-[#176B4D]">Ease</span>
-          </span>
+          <ParkEaseAnimatedLogo size={40} variant="symbol" />
           {user && (
             <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] border border-[#72C98B] uppercase tracking-wide shadow-2xs">
               {isAdmin ? (

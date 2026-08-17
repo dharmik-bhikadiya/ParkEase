@@ -106,9 +106,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subti
           <div className="flex items-center gap-3">
             <Link to="/admin" className="flex items-center gap-2.5 group">
               <ParkEaseAnimatedLogo size={36} variant="symbol" />
-              <span className="text-xl font-black text-[#18342A] tracking-tight">
-                Park<span className="text-[#176B4D]">Ease</span>
-              </span>
             </Link>
 
             <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full bg-[#E8F6EC] text-[#176B4D] border border-[#72C98B] uppercase tracking-wide shadow-2xs">
