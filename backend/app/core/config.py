@@ -51,6 +51,7 @@ class Settings(BaseSettings):
 
     # JWT Security Settings
     JWT_SECRET_KEY: str = "parkease_jwt_secret_key_change_me_in_production_12345"
+    SUPABASE_JWT_SECRET: Optional[str] = Field(default=None, validation_alias=AliasChoices("SUPABASE_JWT_SECRET", "JWT_SECRET_KEY"))
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30

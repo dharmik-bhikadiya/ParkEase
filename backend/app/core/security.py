@@ -53,6 +53,37 @@ def decode_token(token: str) -> Optional[dict]:
     except JWTError:
         return None
 
+def decode_supabase_token(token: str) -> Optional[dict]:
+    """
+    Securely decodes and verifies a Supabase Auth access token.
+    Validates signature, expiration time (exp), and token structure.
+    Signature verification is STRICTLY ENFORCED.
+    """
+    secrets_to_try = []
+    if settings.SUPABASE_JWT_SECRET and settings.SUPABASE_JWT_SECRET.strip():
+        secrets_to_try.append(settings.SUPABASE_JWT_SECRET.strip())
+    if settings.JWT_SECRET_KEY and settings.JWT_SECRET_KEY not in secrets_to_try:
+        secrets_to_try.append(settings.JWT_SECRET_KEY)
+
+    for secret in secrets_to_try:
+        try:
+            payload = jwt.decode(
+                token,
+                secret,
+                algorithms=[settings.JWT_ALGORITHM],
+                options={
+                    "verify_signature": True,
+                    "verify_exp": True,
+                    "verify_aud": False,
+                }
+            )
+            if payload and "sub" in payload and payload["sub"]:
+                return payload
+        except JWTError:
+            continue
+
+    return None
+
 def validate_strong_password(password: str) -> Tuple[bool, Optional[str]]:
     if len(password) < 8:
         return False, "Password must be at least 8 characters long"

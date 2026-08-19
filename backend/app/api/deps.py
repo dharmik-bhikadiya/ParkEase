@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import decode_token
+from app.core.security import decode_token, decode_supabase_token
 from app.models.user import User, UserRole
 from app.repositories.user_repository import user_repository
 
@@ -20,12 +20,14 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    payload = decode_token(token)
+    payload = decode_supabase_token(token)
     if payload is None:
-        raise credentials_exception
+        payload = decode_token(token)
+        if payload is None:
+            raise credentials_exception
     
     user_id: str = payload.get("sub")
-    if user_id is None:
+    if not user_id:
         raise credentials_exception
         
     user = user_repository.get_by_id(db, user_id)
