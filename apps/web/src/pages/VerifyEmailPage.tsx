@@ -209,8 +209,9 @@ export const VerifyEmailPage: React.FC = () => {
 
               <h1 className="text-2xl font-bold text-[#18342A] mb-1.5">Verify Your Email</h1>
               <p className="text-sm text-gray-600 mb-6">
-                We've sent a 6-digit verification code to{' '}
-                <span className="font-semibold text-[#18342A] block mt-0.5">{maskEmail(email)}</span>
+                We've sent a verification code to{' '}
+                <span className="font-semibold text-[#18342A] inline-block">{maskEmail(email)}</span>.
+                <span className="block mt-1 font-medium text-[#18342A]">Enter the 6-digit code from your email to verify your account.</span>
               </p>
 
               {/* Error Alert */}

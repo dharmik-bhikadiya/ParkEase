@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your ParkEase Verification Code</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F7F9F5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #F7F9F5; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Main Card Container -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #FFFFFF; border-radius: 24px; border: 1px solid #E8F6EC; box-shadow: 0 10px 30px rgba(23, 107, 77, 0.06); overflow: hidden;">
+          
+          <!-- Header Banner with ParkEase Logo & Branding -->
+          <tr>
+            <td style="background-color: #176B4D; padding: 32px 24px; text-align: center;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td align="center">
+                    <div style="display: inline-block; background-color: #FFFFFF; border-radius: 16px; padding: 10px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                      <span style="font-size: 22px; font-weight: 800; color: #176B4D; letter-spacing: -0.5px;">ParkEase</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top: 12px;">
+                    <span style="color: #E8F6EC; font-size: 13px; font-weight: 500; tracking: 0.5px;">Smart Parking • Secure Payments</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Content Body -->
+          <tr>
+            <td style="padding: 36px 32px; text-align: center;">
+              <h1 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; color: #18342A; letter-spacing: -0.3px;">
+                Verify Your Email Address
+              </h1>
+              
+              <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4B5563;">
+                Hello <strong style="color: #18342A;">{{ .Email }}</strong>,<br>
+                Welcome to ParkEase! Enter the verification code below to complete your registration and activate your account.
+              </p>
+
+              <!-- Prominent 6-Digit OTP Box -->
+              <div style="background-color: #F0FDF4; border: 2px dashed #72C98B; border-radius: 20px; padding: 24px 16px; margin: 0 0 28px 0; text-align: center;">
+                <span style="display: block; font-size: 11px; font-weight: 700; color: #176B4D; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
+                  Your Verification Code
+                </span>
+                <span style="display: inline-block; font-size: 38px; font-weight: 800; color: #176B4D; letter-spacing: 8px; font-family: 'Courier New', Courier, monospace;">
+                  {{ .Token }}
+                </span>
+                <span style="display: block; font-size: 12px; color: #6B7280; margin-top: 8px;">
+                  This code expires in 10 minutes.
+                </span>
+              </div>
+
+              <!-- Security Notice Box -->
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFBEB; border: 1px solid #FCD34D; border-radius: 14px; margin-bottom: 28px;">
+                <tr>
+                  <td style="padding: 14px 16px; text-align: left;">
+                    <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #92400E;">
+                      <strong>🛡️ Security Notice:</strong> Never share this verification code with anyone. ParkEase support will never ask you for this code.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0; font-size: 12px; color: #9CA3AF; line-height: 1.5;">
+                If you did not request this email, you can safely ignore it. Your account will not be created.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #F9FAFB; padding: 24px; text-align: center; border-top: 1px solid #F3F4F6;">
+              <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: #6B7280;">
+                © ParkEase • Smart Parking & Digital Payments
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #9CA3AF;">
+                This is an automated security email. Please do not reply directly.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

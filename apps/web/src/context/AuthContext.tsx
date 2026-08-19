@@ -213,32 +213,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const verifyEmail = async (email: string, otp: string): Promise<User> => {
-    const { data, error } = await supabase.auth.verifyOtp({
+    let res = await supabase.auth.verifyOtp({
       email,
       token: otp,
-      type: 'signup',
+      type: 'email',
     });
 
-    if (error || !data.session) {
-      throw new Error(error?.message || 'Email verification failed or code expired');
+    if (res.error) {
+      res = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'signup',
+      });
     }
 
-    const accessToken = data.session.access_token;
+    if (res.error || !res.data.session) {
+      throw new Error(res.error?.message || 'That verification code is incorrect or has expired. Please try again.');
+    }
+
+    const accessToken = res.data.session.access_token;
     localStorage.setItem('parkease_token', accessToken);
     setToken(accessToken);
 
     const profile = await fetchParkEaseProfile(accessToken);
-    return profile || ({ id: data.user?.id, email, is_verified: true, role: 'USER' } as User);
+    return profile || ({ id: res.data.user?.id, email, is_verified: true, role: 'USER' } as User);
   };
 
   const resendVerification = async (email: string): Promise<void> => {
-    const { error } = await supabase.auth.resend({
+    let res = await supabase.auth.resend({
       type: 'signup',
       email,
     });
 
-    if (error) {
-      throw new Error(error.message || 'Failed to resend confirmation email');
+    if (res.error) {
+      res = await supabase.auth.resend({
+        type: 'email_change',
+        email,
+      });
+    }
+
+    if (res.error) {
+      throw new Error(res.error.message || 'We couldn\'t send the verification email right now. Please try again shortly.');
     }
   };
 

@@ -116,10 +116,11 @@ export default function MobileVerifyEmailScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
         <MobileLogo size={52} align="center" />
-        <Text style={styles.title}>Verify Email OTP</Text>
+        <Text style={styles.title}>Verify Email</Text>
         <Text style={styles.subtitle}>
-          Enter the 6-digit code sent to {'\n'}
-          <Text style={styles.emailHighlight}>{email}</Text>
+          We've sent a verification code to {'\n'}
+          <Text style={styles.emailHighlight}>{email}</Text> {'\n'}
+          Enter the 6-digit code from your email to verify your account.
         </Text>
 
         {error && (
