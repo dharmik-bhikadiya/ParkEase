@@ -1,5 +1,8 @@
+import hashlib
 import logging
 import smtplib
+import httpx
+from typing import Tuple, Optional
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
@@ -7,11 +10,32 @@ from app.core.config import settings
 
 logger = logging.getLogger("parkease.email_service")
 
+def mask_email(email: str) -> str:
+    """
+    Safely masks recipient email address for logging.
+    e.g., dharmik@gmail.com -> d*****k@gmail.com
+    """
+    if not email or "@" not in email:
+        return "***"
+    local_part, domain = email.split("@", 1)
+    if len(local_part) <= 2:
+        masked_local = local_part[0] + "*" * max(1, len(local_part) - 1)
+    else:
+        masked_local = local_part[0] + "*" * (len(local_part) - 2) + local_part[-1]
+    return f"{masked_local}@{domain}"
+
+def get_secret_fingerprint(secret: Optional[str]) -> str:
+    """
+    Returns non-reversible SHA-256 fingerprint (first 8 chars) of secret for logging matching status.
+    """
+    if not secret or not secret.strip():
+        return "NONE"
+    return hashlib.sha256(secret.strip().encode("utf-8")).hexdigest()[:8]
+
 class EmailService:
     @staticmethod
     def _generate_otp_html(recipient_name: str, otp_code: str) -> str:
         current_year = datetime.now().year
-        # Format OTP digits with space separation for readability
         spaced_otp = " ".join(otp_code)
         
         return f"""<!DOCTYPE html>
@@ -185,42 +209,212 @@ class EmailService:
 </html>"""
 
     @classmethod
-    def send_otp_email(cls, recipient_email: str, recipient_name: str, otp_code: str) -> bool:
+    def send_otp_email(cls, recipient_email: str, recipient_name: str, otp_code: str) -> Tuple[bool, str]:
         """
         Dispatches a branded ParkEase HTML verification email.
-        Uses real SMTP (Gmail/Port 587/STARTTLS) when configured.
-        Falls back to local mock logger ONLY when ENVIRONMENT is 'development' and SMTP is not configured.
+        Primary Infrastructure: Supabase Edge Function / Resend HTTPS API (Port 443).
+        Returns Tuple[bool, str] -> (success, diagnostic_message).
         """
         html_body = cls._generate_otp_html(recipient_name, otp_code)
         subject = "Verify your ParkEase account"
+        masked_recipient = mask_email(recipient_email)
 
-        # Check if SMTP is configured
+        # Check if any email infrastructure is configured
         if not settings.is_smtp_configured:
             if settings.ENVIRONMENT.lower() == "development":
                 print(f"\n==================================================")
                 print(f"[PARKEASE BRANDED EMAIL DISPATCH - MOCK DEV MODE]")
-                print(f"To: {recipient_name} <{recipient_email}>")
+                print(f"To: {recipient_name} <{masked_recipient}>")
                 print(f"Subject: {subject}")
                 print(f"OTP Code: [{otp_code}] (Expires in 10 mins)")
                 print(f"==================================================\n")
-                logger.info(f"Mock email dispatched to {recipient_email} in local development mode")
-                return True
+                logger.info(f"Mock email dispatched to {masked_recipient} in local development mode")
+                return True, "Mock email dispatched in development mode"
             else:
+                err_msg = "Production email infrastructure is not configured. Missing Supabase Function URL, Resend Key, or SMTP credentials."
                 logger.error(
-                    f"[SMTP DIAGNOSTIC] FAILED BEFORE CONNECT: SMTP credentials incomplete in production. "
-                    f"SMTP_HOST_PRESENT={bool(settings.SMTP_HOST and settings.SMTP_HOST.strip())}, "
-                    f"SMTP_USER_PRESENT={bool(settings.SMTP_USER and settings.SMTP_USER.strip())}, "
-                    f"SMTP_PASSWORD_PRESENT={bool(settings.SMTP_PASSWORD and settings.SMTP_PASSWORD.strip())}"
+                    f"\n[EMAIL DELIVERY]\n"
+                    f"Provider: NONE\n"
+                    f"URL_CONFIGURED: False\n"
+                    f"SECRET_CONFIGURED: False\n"
+                    f"Recipient: {masked_recipient}\n"
+                    f"OTP_PRESENT: True\n"
+                    f"REQUEST_STARTED: False\n"
+                    f"HTTP_STATUS: 0\n"
+                    f"RESPONSE_OK: False\n"
+                    f"ERROR_TYPE: CONFIGURATION_MISSING\n"
+                    f"ERROR_MESSAGE: {err_msg}"
                 )
-                return False
+                return False, err_msg
 
-        # Real SMTP Delivery Pipeline
+        # ------------------------------------------------------------------
+        # STRATEGY 1: Supabase Edge Function (Primary HTTPS Infrastructure)
+        # ------------------------------------------------------------------
+        if settings.normalized_supabase_url:
+            function_url = settings.normalized_supabase_url
+            secret = settings.SUPABASE_EMAIL_FUNCTION_SECRET.strip() if settings.SUPABASE_EMAIL_FUNCTION_SECRET else None
+            secret_configured = bool(secret)
+            fingerprint = get_secret_fingerprint(secret)
+
+            headers = {"Content-Type": "application/json"}
+            if secret:
+                headers["Authorization"] = f"Bearer {secret}"
+                headers["apikey"] = secret
+
+            payload = {
+                "to": recipient_email,
+                "recipient_name": recipient_name,
+                "otp": otp_code,
+                "expires_in_minutes": 10,
+            }
+
+            try:
+                logger.info(f"[HTTPS EMAIL] Dispatching email request via Supabase Edge Function to {masked_recipient}...")
+                with httpx.Client(timeout=15.0) as client:
+                    resp = client.post(function_url, headers=headers, json=payload)
+                
+                http_status = resp.status_code
+                response_ok = (http_status == 200)
+
+                try:
+                    resp_data = resp.json()
+                except Exception:
+                    resp_data = {}
+
+                if response_ok and resp_data.get("success") is True:
+                    logger.info(
+                        f"\n[EMAIL DELIVERY]\n"
+                        f"Provider: SUPABASE_EDGE_FUNCTION\n"
+                        f"URL_CONFIGURED: True\n"
+                        f"SECRET_CONFIGURED: {secret_configured} (Fingerprint: {fingerprint})\n"
+                        f"Recipient: {masked_recipient}\n"
+                        f"OTP_PRESENT: True\n"
+                        f"REQUEST_STARTED: True\n"
+                        f"HTTP_STATUS: {http_status}\n"
+                        f"RESPONSE_OK: True\n"
+                        f"ERROR_TYPE: NONE\n"
+                        f"ERROR_MESSAGE: NONE"
+                    )
+                    return True, "Verification email dispatched successfully via Supabase Edge Function"
+                else:
+                    err_type = resp_data.get("error") or f"HTTP_{http_status}"
+                    err_details = resp_data.get("details") or resp.text or "Supabase Edge Function request failed"
+
+                    # Check for Resend free domain testing restrictions
+                    err_details_str = str(err_details).lower()
+                    if "only send testing emails" in err_details_str or "validation_error" in str(err_type).lower():
+                        diagnostic_msg = (
+                            f"Resend free testing domain (onboarding@resend.dev) is restricted to sending only to the registered account owner's email address. "
+                            f"Details: {err_details}"
+                        )
+                    elif http_status == 401:
+                        diagnostic_msg = "Authorization failed between Render backend and Supabase Edge Function (secret mismatch)."
+                    elif http_status == 404:
+                        diagnostic_msg = "Supabase Edge Function URL is invalid or function is not deployed."
+                    else:
+                        diagnostic_msg = f"Supabase Edge Function error ({err_type}): {err_details}"
+
+                    logger.error(
+                        f"\n[EMAIL DELIVERY]\n"
+                        f"Provider: SUPABASE_EDGE_FUNCTION\n"
+                        f"URL_CONFIGURED: True\n"
+                        f"SECRET_CONFIGURED: {secret_configured} (Fingerprint: {fingerprint})\n"
+                        f"Recipient: {masked_recipient}\n"
+                        f"OTP_PRESENT: True\n"
+                        f"REQUEST_STARTED: True\n"
+                        f"HTTP_STATUS: {http_status}\n"
+                        f"RESPONSE_OK: False\n"
+                        f"ERROR_TYPE: {err_type}\n"
+                        f"ERROR_MESSAGE: {diagnostic_msg}"
+                    )
+                    return False, diagnostic_msg
+
+            except Exception as e:
+                err_type = type(e).__name__
+                err_msg = str(e)
+                logger.error(
+                    f"\n[EMAIL DELIVERY]\n"
+                    f"Provider: SUPABASE_EDGE_FUNCTION\n"
+                    f"URL_CONFIGURED: True\n"
+                    f"SECRET_CONFIGURED: {secret_configured} (Fingerprint: {fingerprint})\n"
+                    f"Recipient: {masked_recipient}\n"
+                    f"OTP_PRESENT: True\n"
+                    f"REQUEST_STARTED: True\n"
+                    f"HTTP_STATUS: 0\n"
+                    f"RESPONSE_OK: False\n"
+                    f"ERROR_TYPE: {err_type}\n"
+                    f"ERROR_MESSAGE: {err_msg}"
+                )
+                return False, f"Exception reaching Supabase Edge Function ({err_type}): {err_msg}"
+
+        # ------------------------------------------------------------------
+        # STRATEGY 2: Resend Direct HTTPS API (Direct Port 443 Fallback)
+        # ------------------------------------------------------------------
+        if settings.RESEND_API_KEY and settings.RESEND_API_KEY.strip():
+            resend_key = settings.RESEND_API_KEY.strip()
+            from_sender = settings.PARKEASE_EMAIL_FROM or "ParkEase <onboarding@resend.dev>"
+            
+            headers = {
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "from": from_sender,
+                "to": [recipient_email],
+                "subject": subject,
+                "html": html_body,
+            }
+
+            try:
+                logger.info(f"[HTTPS EMAIL] Dispatching email request via Resend API to {masked_recipient}...")
+                with httpx.Client(timeout=15.0) as client:
+                    resp = client.post("https://api.resend.com/emails", headers=headers, json=payload)
+
+                http_status = resp.status_code
+                if http_status in (200, 201):
+                    logger.info(
+                        f"\n[EMAIL DELIVERY]\n"
+                        f"Provider: RESEND_DIRECT_API\n"
+                        f"URL_CONFIGURED: True\n"
+                        f"SECRET_CONFIGURED: True\n"
+                        f"Recipient: {masked_recipient}\n"
+                        f"OTP_PRESENT: True\n"
+                        f"REQUEST_STARTED: True\n"
+                        f"HTTP_STATUS: {http_status}\n"
+                        f"RESPONSE_OK: True\n"
+                        f"ERROR_TYPE: NONE\n"
+                        f"ERROR_MESSAGE: NONE"
+                    )
+                    return True, "Verification email dispatched successfully via Resend Direct API"
+                else:
+                    err_msg = f"Resend API HTTP {http_status}: {resp.text}"
+                    logger.error(
+                        f"\n[EMAIL DELIVERY]\n"
+                        f"Provider: RESEND_DIRECT_API\n"
+                        f"URL_CONFIGURED: True\n"
+                        f"SECRET_CONFIGURED: True\n"
+                        f"Recipient: {masked_recipient}\n"
+                        f"OTP_PRESENT: True\n"
+                        f"REQUEST_STARTED: True\n"
+                        f"HTTP_STATUS: {http_status}\n"
+                        f"RESPONSE_OK: False\n"
+                        f"ERROR_TYPE: RESEND_HTTP_{http_status}\n"
+                        f"ERROR_MESSAGE: {err_msg}"
+                    )
+                    return False, err_msg
+            except Exception as e:
+                err_msg = f"Exception calling Resend API: {type(e).__name__} - {str(e)}"
+                logger.error(f"[HTTPS EMAIL] {err_msg}")
+                return False, err_msg
+
+        # ------------------------------------------------------------------
+        # STRATEGY 3: Legacy SMTP Delivery Pipeline (If Host & Pass Set)
+        # ------------------------------------------------------------------
         host = settings.SMTP_HOST.strip() if settings.SMTP_HOST else ""
         port = settings.SMTP_PORT
         user = settings.SMTP_USER.strip() if settings.SMTP_USER else ""
-        password = settings.SMTP_PASSWORD.strip().strip('"').strip("'") if settings.SMTP_PASSWORD else ""
+        password = settings.SMTP_PASSWORD.strip().strip('"').strip("'").replace(" ", "") if settings.SMTP_PASSWORD else ""
         
-        # Sender Email Fallback: Gmail SMTP requires From email to match authenticated user or authorized alias
         raw_from = settings.EMAILS_FROM_EMAIL.strip() if settings.EMAILS_FROM_EMAIL else ""
         if not raw_from or raw_from == "noreply@parkease.com":
             from_email = user if ("gmail" in host.lower() and user) else (raw_from or user or "noreply@parkease.com")
@@ -228,8 +422,6 @@ class EmailService:
             from_email = raw_from
 
         from_name = settings.EMAILS_FROM_NAME.strip() if settings.EMAILS_FROM_NAME else "ParkEase"
-
-        logger.info(f"[SMTP DIAGNOSTIC] Step 0: PREPARE -> Host='{host}', Port={port}, User='{user}', From='{from_email}', TLS={settings.SMTP_TLS or port==587}")
 
         current_step = "INIT"
         try:
@@ -252,80 +444,40 @@ class EmailService:
             if port == 465:
                 current_step = "CONNECT"
                 with smtplib.SMTP_SSL(host, port, timeout=15) as server:
-                    logger.info(f"[SMTP DIAGNOSTIC] Step 1: CONNECT -> SUCCESS to {host}:{port}")
-
                     current_step = "EHLO_1"
                     server.ehlo()
-                    logger.info(f"[SMTP DIAGNOSTIC] Step 2: EHLO 1 -> SUCCESS")
 
                     if user and password:
                         current_step = "LOGIN"
                         server.login(user, password)
-                        logger.info(f"[SMTP DIAGNOSTIC] Step 5: LOGIN -> SUCCESS for user '{user}'")
-                    else:
-                        logger.warning(f"[SMTP DIAGNOSTIC] Step 5: LOGIN -> SKIPPED (user or password empty)")
 
                     current_step = "SEND"
                     server.send_message(msg)
-                    logger.info(f"[SMTP DIAGNOSTIC] Step 6: SEND -> SUCCESS! Message accepted by SMTP server for recipient '{recipient_email}'")
-
-                    current_step = "QUIT"
-                    return True
+                    return True, "Verification email dispatched via SMTP SSL"
             else:
                 current_step = "CONNECT"
                 with smtplib.SMTP(host, port, timeout=15) as server:
-                    logger.info(f"[SMTP DIAGNOSTIC] Step 1: CONNECT -> SUCCESS to {host}:{port}")
-
                     current_step = "EHLO_1"
                     server.ehlo()
-                    logger.info(f"[SMTP DIAGNOSTIC] Step 2: EHLO 1 -> SUCCESS")
 
                     if settings.SMTP_TLS or port == 587:
                         current_step = "STARTTLS"
                         server.starttls()
-                        logger.info(f"[SMTP DIAGNOSTIC] Step 3: STARTTLS -> SUCCESS")
                         current_step = "EHLO_2"
                         server.ehlo()
-                        logger.info(f"[SMTP DIAGNOSTIC] Step 4: EHLO 2 -> SUCCESS")
 
                     if user and password:
                         current_step = "LOGIN"
                         server.login(user, password)
-                        logger.info(f"[SMTP DIAGNOSTIC] Step 5: LOGIN -> SUCCESS for user '{user}'")
-                    else:
-                        logger.warning(f"[SMTP DIAGNOSTIC] Step 5: LOGIN -> SKIPPED (user or password empty)")
 
                     current_step = "SEND"
                     server.send_message(msg)
-                    logger.info(f"[SMTP DIAGNOSTIC] Step 6: SEND -> SUCCESS! Message accepted by SMTP server for recipient '{recipient_email}'")
+                    return True, "Verification email dispatched via SMTP"
 
-                    current_step = "QUIT"
-                    return True
-
-        except smtplib.SMTPAuthenticationError as auth_err:
-            logger.error(
-                f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPAuthenticationError on {host}:{port} for user '{user}': "
-                f"code={auth_err.smtp_code}, msg={auth_err.smtp_error}. "
-                f"CRITICAL: Gmail App Password is invalid/revoked or credentials are wrong."
-            )
-            return False
-        except smtplib.SMTPConnectError as conn_err:
-            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPConnectError to {host}:{port}: {conn_err}")
-            return False
-        except smtplib.SMTPServerDisconnected as disc_err:
-            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPServerDisconnected from {host}:{port}: {disc_err}")
-            return False
-        except smtplib.SMTPSenderRefused as send_err:
-            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPSenderRefused on {host}:{port}: {send_err}")
-            return False
-        except smtplib.SMTPRecipientsRefused as recip_err:
-            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPRecipientRefused on {host}:{port}: {recip_err}")
-            return False
-        except smtplib.SMTPException as smtp_err:
-            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: SMTPException on {host}:{port}: {type(smtp_err).__name__} - {smtp_err}")
-            return False
-        except (TimeoutError, OSError, Exception) as e:
-            logger.error(f"[SMTP DIAGNOSTIC] Step {current_step} FAILED: {type(e).__name__} on {host}:{port} - {str(e)}")
-            return False
+        except Exception as e:
+            err_msg = f"SMTP Step {current_step} failed: {type(e).__name__} on {host}:{port} - {str(e)}"
+            logger.error(f"[SMTP DIAGNOSTIC] {err_msg}")
+            return False, err_msg
 
 email_service = EmailService()
+

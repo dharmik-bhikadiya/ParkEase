@@ -63,7 +63,13 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_SECRET: str = ""
     PAYMENT_PROVIDER: str = "SANDBOX"
 
-    # SMTP / Email Configuration (Supports standard aliases used across Render / Cloud providers)
+    # SMTP / Email Infrastructure Configuration
+    SUPABASE_URL: Optional[str] = Field(default=None, validation_alias=AliasChoices("SUPABASE_URL", "SUPABASE_PROJECT_URL"))
+    SUPABASE_EMAIL_FUNCTION_URL: Optional[str] = Field(default=None, validation_alias=AliasChoices("SUPABASE_EMAIL_FUNCTION_URL", "SUPABASE_FUNCTION_URL"))
+    SUPABASE_EMAIL_FUNCTION_SECRET: Optional[str] = Field(default=None, validation_alias=AliasChoices("SUPABASE_EMAIL_FUNCTION_SECRET", "PARKEASE_EMAIL_FUNCTION_SECRET"))
+    RESEND_API_KEY: Optional[str] = Field(default=None, validation_alias=AliasChoices("RESEND_API_KEY", "RESEND_KEY"))
+    PARKEASE_EMAIL_FROM: str = Field(default="ParkEase <onboarding@resend.dev>", validation_alias=AliasChoices("PARKEASE_EMAIL_FROM", "RESEND_FROM_EMAIL"))
+
     SMTP_HOST: Optional[str] = Field(default=None, validation_alias=AliasChoices("SMTP_HOST", "MAIL_SERVER"))
     SMTP_PORT: int = Field(default=587, validation_alias=AliasChoices("SMTP_PORT", "MAIL_PORT"))
     SMTP_USER: Optional[str] = Field(default=None, validation_alias=AliasChoices("SMTP_USER", "SMTP_USERNAME", "MAIL_USERNAME"))
@@ -73,14 +79,28 @@ class Settings(BaseSettings):
     SMTP_TLS: bool = Field(default=True, validation_alias=AliasChoices("SMTP_TLS", "SMTP_USE_TLS", "MAIL_USE_TLS"))
 
     @property
+    def normalized_supabase_url(self) -> Optional[str]:
+        """
+        Returns normalized Supabase Edge Function HTTPS URL stripped of trailing slashes and spaces.
+        """
+        if not self.SUPABASE_EMAIL_FUNCTION_URL or not self.SUPABASE_EMAIL_FUNCTION_URL.strip():
+            return None
+        url = self.SUPABASE_EMAIL_FUNCTION_URL.strip().rstrip("/")
+        if url.startswith("http://"):
+            url = "https://" + url[7:]
+        elif not url.startswith("https://"):
+            url = "https://" + url
+        return url
+
+    @property
     def is_smtp_configured(self) -> bool:
         """
-        Returns True if valid SMTP Host, SMTP User, and SMTP Password credentials are provided.
+        Returns True if any valid email infrastructure (Supabase Edge Function, Resend API key, or SMTP credentials) is configured.
         """
         return bool(
-            self.SMTP_HOST and self.SMTP_HOST.strip() and
-            self.SMTP_USER and self.SMTP_USER.strip() and
-            self.SMTP_PASSWORD and self.SMTP_PASSWORD.strip()
+            (self.normalized_supabase_url) or
+            (self.RESEND_API_KEY and self.RESEND_API_KEY.strip()) or
+            (self.SMTP_HOST and self.SMTP_HOST.strip() and self.SMTP_USER and self.SMTP_USER.strip() and self.SMTP_PASSWORD and self.SMTP_PASSWORD.strip())
         )
 
     model_config = SettingsConfigDict(

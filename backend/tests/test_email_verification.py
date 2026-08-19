@@ -277,8 +277,8 @@ def test_smtp_send_success_mock_smtp():
              patch("app.core.config.settings.SMTP_USER", "test@gmail.com"), \
              patch("app.core.config.settings.SMTP_PASSWORD", "app_password_123"):
 
-            result = email_service.send_otp_email("recipient@domain.com", "Test User", "123456")
-            assert result is True
+            success, _ = email_service.send_otp_email("recipient@domain.com", "Test User", "123456")
+            assert success is True
             mock_server.ehlo.assert_called()
             mock_server.starttls.assert_called()
             mock_server.login.assert_called_with("test@gmail.com", "app_password_123")
@@ -294,13 +294,65 @@ def test_smtp_auth_failure_handling():
              patch("app.core.config.settings.SMTP_USER", "invalid@gmail.com"), \
              patch("app.core.config.settings.SMTP_PASSWORD", "wrong_pass"):
 
-            result = email_service.send_otp_email("recipient@domain.com", "Test User", "123456")
-            assert result is False
+            success, _ = email_service.send_otp_email("recipient@domain.com", "Test User", "123456")
+            assert success is False
 
 def test_production_missing_smtp_returns_false_and_no_mock():
-    with patch("app.core.config.settings.SMTP_HOST", None), \
+    with patch("app.core.config.settings.SUPABASE_EMAIL_FUNCTION_URL", None), \
+         patch("app.core.config.settings.RESEND_API_KEY", None), \
+         patch("app.core.config.settings.SMTP_HOST", None), \
          patch("app.core.config.settings.SMTP_USER", None), \
          patch("app.core.config.settings.ENVIRONMENT", "production"):
 
-        result = email_service.send_otp_email("user@domain.com", "Prod User", "999888")
-        assert result is False
+        success, msg = email_service.send_otp_email("user@domain.com", "Prod User", "999888")
+        assert success is False
+        assert "not configured" in msg.lower()
+
+def test_supabase_edge_function_email_success():
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {"success": True, "message_id": "msg_supabase_123"}
+
+    with patch("httpx.Client.post", return_value=mock_resp) as mock_post, \
+         patch("app.core.config.settings.SUPABASE_EMAIL_FUNCTION_URL", "https://xyz.supabase.co/functions/v1/send-parkease-verification-email"), \
+         patch("app.core.config.settings.SUPABASE_EMAIL_FUNCTION_SECRET", "test_bearer_secret"):
+
+        success, msg = email_service.send_otp_email("test@example.com", "Test User", "123456")
+        assert success is True
+        assert "successfully" in msg.lower()
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        assert kwargs["headers"]["Authorization"] == "Bearer test_bearer_secret"
+        assert kwargs["json"]["to"] == "test@example.com"
+        assert kwargs["json"]["otp"] == "123456"
+
+def test_supabase_edge_function_email_failure_returns_false():
+    mock_resp = MagicMock()
+    mock_resp.status_code = 401
+    mock_resp.json.return_value = {"success": False, "error": "UNAUTHORIZED_SERVER_REQUEST"}
+
+    with patch("httpx.Client.post", return_value=mock_resp), \
+         patch("app.core.config.settings.SUPABASE_EMAIL_FUNCTION_URL", "https://xyz.supabase.co/functions/v1/send-parkease-verification-email"), \
+         patch("app.core.config.settings.SUPABASE_EMAIL_FUNCTION_SECRET", "wrong_secret"):
+
+        success, msg = email_service.send_otp_email("test@example.com", "Test User", "123456")
+        assert success is False
+        assert "secret mismatch" in msg.lower() or "unauthorized" in msg.lower()
+
+def test_resend_direct_https_api_success():
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {"id": "resend_msg_999"}
+
+    with patch("httpx.Client.post", return_value=mock_resp) as mock_post, \
+         patch("app.core.config.settings.SUPABASE_EMAIL_FUNCTION_URL", None), \
+         patch("app.core.config.settings.RESEND_API_KEY", "re_123456789"), \
+         patch("app.core.config.settings.PARKEASE_EMAIL_FROM", "ParkEase <onboarding@resend.dev>"):
+
+        success, _ = email_service.send_otp_email("resend_recipient@example.com", "Resend User", "654321")
+        assert success is True
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        assert kwargs["headers"]["Authorization"] == "Bearer re_123456789"
+        assert kwargs["json"]["to"] == ["resend_recipient@example.com"]
+

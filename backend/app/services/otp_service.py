@@ -80,7 +80,7 @@ class OTPService:
         db.commit()
 
         # Send branded HTML verification email
-        sent = email_service.send_otp_email(
+        sent, err_detail = email_service.send_otp_email(
             recipient_email=clean_email,
             recipient_name=full_name,
             otp_code=raw_otp
@@ -89,7 +89,7 @@ class OTPService:
         if not sent:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Unable to send verification email. Please try again or check server email settings."
+                detail=f"Unable to send verification email. {err_detail}"
             )
 
         return raw_otp
@@ -135,7 +135,7 @@ class OTPService:
         pending.last_resent_at = now
         db.commit()
 
-        sent = email_service.send_otp_email(
+        sent, err_detail = email_service.send_otp_email(
             recipient_email=pending.email,
             recipient_name=pending.full_name,
             otp_code=raw_otp
@@ -144,7 +144,7 @@ class OTPService:
         if not sent:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Unable to send verification email. Please try again."
+                detail=f"Unable to send verification email. {err_detail}"
             )
 
     @classmethod
