@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, LoginRequest, RegisterRequest, UpdateProfileRequest } from '@parkease/shared';
+import { User, UserRole, LoginRequest, RegisterRequest, UpdateProfileRequest } from '@parkease/shared';
 import { mobileApiFetch } from '../api/client';
 import { mobileStorage } from '../utils/storage';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -22,25 +23,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const fetchParkEaseProfile = async (accessToken?: string): Promise<User | null> => {
+    try {
+      const activeToken = accessToken || (await mobileStorage.getItem('parkease_token'));
+      if (!activeToken) return null;
+      const res = await mobileApiFetch('/users/me', {
+        headers: { Authorization: `Bearer ${activeToken}` },
+      });
+      if (res?.success && res?.data) {
+        setUser(res.data);
+        return res.data;
+      }
+    } catch {
+      // Ignore profile fetch failure
+    }
+    return null;
+  };
+
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = await mobileStorage.getItem('parkease_token');
-      if (storedToken) {
-        try {
-          const res = await mobileApiFetch('/users/me');
-          if (res?.success && res?.data) {
-            setUser(res.data);
-          } else {
-            await logoutLocal();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await mobileStorage.setItem('parkease_token', session.access_token);
+          await fetchParkEaseProfile(session.access_token);
+        } else {
+          const storedToken = await mobileStorage.getItem('parkease_token');
+          if (storedToken) {
+            await fetchParkEaseProfile(storedToken);
           }
-        } catch {
-          await logoutLocal();
         }
+      } catch {
+        await logoutLocal();
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.access_token) {
+        await mobileStorage.setItem('parkease_token', session.access_token);
+        await fetchParkEaseProfile(session.access_token);
+      } else if (event === 'SIGNED_OUT') {
+        await logoutLocal();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const logoutLocal = async () => {
@@ -50,68 +83,99 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (credentials: LoginRequest): Promise<User> => {
-    const res = await mobileApiFetch('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({
-        email_or_phone: credentials.emailOrPhone,
-        password: credentials.password,
-      }),
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: credentials.emailOrPhone,
+      password: credentials.password,
     });
 
-    const tokenData = res.data;
-    const accessToken = tokenData.access_token || tokenData.accessToken;
-    const refreshToken = tokenData.refresh_token || tokenData.refreshToken;
+    if (error || !data.session) {
+      throw new Error(error?.message || 'Invalid email or password.');
+    }
+
+    const accessToken = data.session.access_token;
+    const refreshToken = data.session.refresh_token;
 
     if (accessToken) await mobileStorage.setItem('parkease_token', accessToken);
     if (refreshToken) await mobileStorage.setItem('parkease_refresh_token', refreshToken);
 
-    setUser(tokenData.user);
-    return tokenData.user;
+    const profile = await fetchParkEaseProfile(accessToken);
+    if (profile) return profile;
+
+    const fallbackUser: User = {
+      id: data.user.id,
+      email: data.user.email || '',
+      fullName: data.user.user_metadata?.full_name || 'ParkEase User',
+      phoneNumber: data.user.user_metadata?.phone_number || '',
+      role: UserRole.USER,
+      isVerified: !!data.user.email_confirmed_at,
+      is_verified: !!data.user.email_confirmed_at,
+      isActive: true,
+      createdAt: data.user.created_at || new Date().toISOString(),
+      updatedAt: data.user.updated_at || new Date().toISOString(),
+    };
+    setUser(fallbackUser);
+    return fallbackUser;
   };
 
   const register = async (data: RegisterRequest): Promise<User> => {
-    const res = await mobileApiFetch('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        full_name: data.fullName,
-        email: data.email,
-        phone_number: data.phoneNumber,
-        password: data.password,
-        confirm_password: data.confirmPassword,
-        role: data.role || 'USER',
-      }),
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          full_name: data.fullName,
+          phone_number: data.phoneNumber,
+        },
+      },
     });
 
-    return (res.data?.user || res.data) as User;
+    if (error) {
+      throw new Error(error.message || 'Registration failed via Supabase Auth');
+    }
+
+    const createdUser: User = {
+      id: authData.user?.id || '',
+      email: data.email,
+      fullName: data.fullName,
+      phoneNumber: data.phoneNumber,
+      role: UserRole.USER,
+      isVerified: !!authData.user?.email_confirmed_at,
+      is_verified: !!authData.user?.email_confirmed_at,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    return createdUser;
   };
 
   const verifyEmail = async (email: string, otp: string): Promise<User> => {
-    const res = await mobileApiFetch('/auth/verify-email', {
-      method: 'POST',
-      body: JSON.stringify({
-        email,
-        otp,
-      }),
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'signup',
     });
 
-    const tokenData = res.data;
-    const accessToken = tokenData.access_token || tokenData.accessToken;
-    const refreshToken = tokenData.refresh_token || tokenData.refreshToken;
+    if (error || !data.session) {
+      throw new Error(error?.message || 'Email verification failed or code expired');
+    }
 
-    if (accessToken) await mobileStorage.setItem('parkease_token', accessToken);
-    if (refreshToken) await mobileStorage.setItem('parkease_refresh_token', refreshToken);
+    const accessToken = data.session.access_token;
+    await mobileStorage.setItem('parkease_token', accessToken);
 
-    setUser(tokenData.user);
-    return tokenData.user;
+    const profile = await fetchParkEaseProfile(accessToken);
+    return profile || ({ id: data.user?.id, email, is_verified: true, role: 'USER' } as User);
   };
 
   const resendVerification = async (email: string): Promise<void> => {
-    await mobileApiFetch('/auth/resend-verification', {
-      method: 'POST',
-      body: JSON.stringify({
-        email,
-      }),
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
     });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to resend confirmation email');
+    }
   };
 
   const loginWithGoogle = async (idToken: string): Promise<User> => {
@@ -124,10 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const tokenData = res.data;
     const accessToken = tokenData.access_token || tokenData.accessToken;
-    const refreshToken = tokenData.refresh_token || tokenData.refreshToken;
-
     if (accessToken) await mobileStorage.setItem('parkease_token', accessToken);
-    if (refreshToken) await mobileStorage.setItem('parkease_refresh_token', refreshToken);
 
     setUser(tokenData.user);
     return tokenData.user;
@@ -135,12 +196,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      const refreshStr = await mobileStorage.getItem('parkease_refresh_token');
-      await mobileApiFetch(`/auth/logout?refresh_token=${encodeURIComponent(refreshStr || '')}`, {
-        method: 'POST',
-      });
+      await supabase.auth.signOut();
     } catch {
-      // Ignore backend logout error
+      // Ignore errors
     } finally {
       await logoutLocal();
     }
@@ -160,10 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshUser = async () => {
-    const res = await mobileApiFetch('/users/me');
-    if (res?.success && res?.data) {
-      setUser(res.data);
-    }
+    await fetchParkEaseProfile();
   };
 
   return (

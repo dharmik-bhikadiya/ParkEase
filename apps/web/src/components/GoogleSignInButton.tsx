@@ -35,11 +35,11 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       const gUser = await loginWithGoogle(response.credential);
       if (onSuccess) {
         onSuccess();
-      } else if (gUser.role === 'ADMIN') {
+      } else if (gUser && gUser.role === 'ADMIN') {
         navigate('/admin', { replace: true });
-      } else if (gUser.role === 'PARKING_OWNER') {
+      } else if (gUser && gUser.role === 'PARKING_OWNER') {
         navigate('/owner/dashboard', { replace: true });
-      } else if (gUser.role === 'PARKING_STAFF' || gUser.role === 'STAFF') {
+      } else if (gUser && (gUser.role === 'PARKING_STAFF' || gUser.role === 'STAFF')) {
         navigate('/staff/gate-scan', { replace: true });
       } else {
         navigate('/find-parking', { replace: true });
@@ -149,11 +149,11 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       const gUser = await loginWithGoogle(devMockToken);
       if (onSuccess) {
         onSuccess();
-      } else if (gUser.role === 'ADMIN') {
+      } else if (gUser && gUser.role === 'ADMIN') {
         navigate('/admin', { replace: true });
-      } else if (gUser.role === 'PARKING_OWNER') {
+      } else if (gUser && gUser.role === 'PARKING_OWNER') {
         navigate('/owner/dashboard', { replace: true });
-      } else if (gUser.role === 'PARKING_STAFF' || gUser.role === 'STAFF') {
+      } else if (gUser && (gUser.role === 'PARKING_STAFF' || gUser.role === 'STAFF')) {
         navigate('/staff/gate-scan', { replace: true });
       } else {
         navigate('/find-parking', { replace: true });
