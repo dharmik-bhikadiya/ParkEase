@@ -53,7 +53,7 @@ def mask_connection_url(url: str) -> str:
 
 def get_connection_urls() -> Tuple[str, str]:
     neon_url = os.getenv("NEON_DATABASE_URL") or os.getenv("DATABASE_URL")
-    if not neon_url or "neon.tech" not in neon_url:
+    if not neon_url:
         neon_url = "postgresql://neondb_owner:your_neon_password@localhost:5432/neondb"
     
     supabase_url = os.getenv("SUPABASE_DATABASE_URL", "").strip()
