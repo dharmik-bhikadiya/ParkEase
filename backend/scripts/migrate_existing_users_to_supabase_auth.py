@@ -1,6 +1,7 @@
 """
 ParkEase Script: Migrate Existing Users to Supabase Auth
-Safely imports existing public.users into Supabase auth.users preserving UUIDs, bcrypt password hashes, and verification state.
+Safely imports existing public.users into Supabase auth.users & auth.identities
+preserving UUIDs, bcrypt password hashes, and verification state.
 
 Usage:
   python backend/scripts/migrate_existing_users_to_supabase_auth.py              (Dry-Run Mode)
@@ -68,8 +69,8 @@ def run_migration(execute: bool = False):
             already_in_auth = uid in auth_user_map or email in auth_user_map.values()
             
             prepared_users.append({
-                "id": uid,
-                "email": email,
+                "id": str(uid),
+                "email": str(email),
                 "full_name": full_name,
                 "phone": phone,
                 "role": str(role),
@@ -97,11 +98,11 @@ def run_migration(execute: bool = False):
             print("=" * 65)
             return
 
-        # LIVE EXECUTION MODE
-        print("\n[STEP 3] Executing Live Import into auth.users and auth.identities...")
+        # LIVE EXECUTION MODE (ATOMIC TRANSACTION)
+        print("\n[STEP 3] Executing Live Atomic Import into auth.users and auth.identities...")
         with engine.begin() as tx_conn:
             for u in to_migrate:
-                # Insert into auth.users
+                # 1. Insert into auth.users (excluding generated column 'confirmed_at')
                 insert_auth_user_sql = text("""
                     INSERT INTO auth.users (
                         id,
@@ -142,33 +143,48 @@ def run_migration(execute: bool = False):
                     "updated_at": u["updated_at"],
                 })
 
-                # Insert email identity into auth.identities
-                insert_identity_sql = text("""
-                    INSERT INTO auth.identities (
-                        id,
-                        user_id,
-                        identity_data,
-                        provider,
-                        last_sign_in_at,
-                        created_at,
-                        updated_at
-                    ) VALUES (
-                        :id,
-                        :id,
-                        json_build_object('sub', :id, 'email', :email),
-                        'email',
-                        NOW(),
-                        :created_at,
-                        :updated_at
-                    )
-                    ON CONFLICT (provider, id) DO NOTHING;
-                """)
-                tx_conn.execute(insert_identity_sql, {
-                    "id": u["id"],
-                    "email": u["email"],
-                    "created_at": u["created_at"],
-                    "updated_at": u["updated_at"],
-                })
+                # 2. Check if identity exists before insert
+                existing_identity = tx_conn.execute(text("""
+                    SELECT user_id FROM auth.identities WHERE provider_id = :provider_id AND provider = 'email';
+                """), {"provider_id": u["id"]}).fetchone()
+
+                if existing_identity:
+                    if str(existing_identity[0]) == u["id"]:
+                        print(f"  [IDENTITY EXISTS] Email identity already present for {u['email']}.")
+                    else:
+                        raise Exception(f"Identity conflict: provider_id {u['id']} belongs to user {existing_identity[0]}")
+                else:
+                    # Insert email identity (excluding generated column 'email')
+                    insert_identity_sql = text("""
+                        INSERT INTO auth.identities (
+                            id,
+                            provider_id,
+                            user_id,
+                            identity_data,
+                            provider,
+                            last_sign_in_at,
+                            created_at,
+                            updated_at
+                        ) VALUES (
+                            :id,
+                            :provider_id,
+                            :user_id,
+                            json_build_object('sub', :provider_id, 'email', :email),
+                            'email',
+                            NOW(),
+                            :created_at,
+                            :updated_at
+                        )
+                        ON CONFLICT (provider_id, provider) DO NOTHING;
+                    """)
+                    tx_conn.execute(insert_identity_sql, {
+                        "id": u["id"],
+                        "provider_id": u["id"],
+                        "user_id": u["id"],
+                        "email": u["email"],
+                        "created_at": u["created_at"],
+                        "updated_at": u["updated_at"],
+                    })
 
                 print(f"  [IMPORTED] {u['email']} (UUID: {u['id'][:8]}...)")
 
