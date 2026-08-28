@@ -44,10 +44,47 @@ class Settings(BaseSettings):
         """
         Returns normalized PostgreSQL connection URL for SQLAlchemy.
         Converts legacy 'postgres://' schema (common in Neon/Render) to 'postgresql://'.
+        Strips surrounding quotes and whitespace safely.
         """
-        if self.DATABASE_URL and self.DATABASE_URL.startswith("postgres://"):
-            return self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
-        return self.DATABASE_URL
+        if not self.DATABASE_URL:
+            return ""
+        url = self.DATABASE_URL.strip().strip("'\"")
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql://", 1)
+        return url
+
+    def get_safe_db_diagnostic(self) -> dict:
+        """
+        Safe diagnostic reporting database connection parameters WITHOUT exposing sensitive passwords or full URLs.
+        """
+        url_str = self.sync_database_url
+        if not url_str:
+            return {
+                "has_database_url": False,
+                "host": None,
+                "port": None,
+                "username": None,
+                "database": None,
+                "has_password": False,
+            }
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url_str)
+            return {
+                "has_database_url": True,
+                "host": parsed.hostname,
+                "port": parsed.port or 5432,
+                "username": parsed.username,
+                "database": parsed.path.lstrip("/").split("?")[0] if parsed.path else None,
+                "has_password": bool(parsed.password),
+            }
+        except Exception:
+            return {
+                "has_database_url": True,
+                "error": "Failed to parse DATABASE_URL",
+                "has_password": False,
+            }
+
 
     # JWT Security Settings
     JWT_SECRET_KEY: str = "parkease_jwt_secret_key_change_me_in_production_12345"

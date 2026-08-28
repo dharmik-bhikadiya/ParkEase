@@ -7,6 +7,7 @@ import { UserRole } from '@parkease/shared';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ParkEaseAnimatedLogo } from '../components/brand/ParkEaseAnimatedLogo';
 import { SelectDropdown } from '../components/ui/SelectDropdown';
+import { getAuthErrorMessage } from '../utils/authError';
 
 export const RegisterPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -49,8 +50,8 @@ export const RegisterPage: React.FC = () => {
         role,
       });
       navigate(`/verify-email?email=${encodeURIComponent(email)}`);
-    } catch (err: any) {
-      setError(err.message || 'Registration failed. Please verify input data.');
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -75,14 +76,14 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-3 text-sm">
+          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-3 text-sm font-medium shadow-xs">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         <div className="mb-6">
-          <GoogleSignInButton onError={(msg) => setError(msg)} text="Sign up with Google" />
+          <GoogleSignInButton onError={(msg) => setError(getAuthErrorMessage(msg))} text="Sign up with Google" />
 
           <div className="relative flex py-4 items-center">
             <div className="flex-grow border-t border-gray-200"></div>

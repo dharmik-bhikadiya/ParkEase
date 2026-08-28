@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error || !data.session) {
-      throw new Error(error?.message || 'Invalid email or password.');
+      throw error || new Error('Invalid email or password.');
     }
 
     const accessToken = data.session.access_token;
@@ -138,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error) {
-      throw new Error(error.message || 'Registration failed via Supabase Auth');
+      throw error;
     }
 
     const createdUser: User = {
@@ -228,7 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (res.error || !res.data.session) {
-      throw new Error(res.error?.message || 'That verification code is incorrect or has expired. Please try again.');
+      throw res.error || new Error('That verification code is incorrect or has expired. Please try again.');
     }
 
     const accessToken = res.data.session.access_token;
@@ -253,7 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (res.error) {
-      throw new Error(res.error.message || 'We couldn\'t send the verification email right now. Please try again shortly.');
+      throw res.error;
     }
   };
 

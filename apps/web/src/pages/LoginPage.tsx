@@ -5,6 +5,7 @@ import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ParkEaseAnimatedLogo } from '../components/brand/ParkEaseAnimatedLogo';
+import { getAuthErrorMessage } from '../utils/authError';
 
 export const LoginPage: React.FC = () => {
   const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -36,8 +37,8 @@ export const LoginPage: React.FC = () => {
       } else {
         navigate('/find-parking', { replace: true });
       }
-    } catch (err: any) {
-      setError(err.message || 'Invalid credentials. Please try again.');
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, 'Unable to sign in right now. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -62,16 +63,16 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 flex flex-col gap-2 text-sm">
+          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 flex flex-col gap-2 text-sm shadow-xs">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-              <span>{error}</span>
+              <span className="font-medium">{error}</span>
             </div>
-            {error.toLowerCase().includes('not verified') && (
+            {(error.toLowerCase().includes('verify') || error.toLowerCase().includes('not verified') || error.toLowerCase().includes('email address')) && (
               <div className="mt-1 pl-8">
                 <Link
                   to={`/verify-email?email=${encodeURIComponent(emailOrPhone.includes('@') ? emailOrPhone : '')}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#176B4D] text-white text-xs font-semibold rounded-xl hover:bg-[#12543c] transition-all"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#176B4D] text-white text-xs font-semibold rounded-xl hover:bg-[#12543c] transition-all shadow-xs"
                 >
                   Verify Email Now
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -82,7 +83,7 @@ export const LoginPage: React.FC = () => {
         )}
 
         <div className="mb-6">
-          <GoogleSignInButton onError={(msg) => setError(msg)} />
+          <GoogleSignInButton onError={(msg) => setError(getAuthErrorMessage(msg))} />
 
           <div className="relative flex py-4 items-center">
             <div className="flex-grow border-t border-gray-200"></div>

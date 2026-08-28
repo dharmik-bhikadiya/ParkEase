@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ParkEaseAnimatedLogo } from '../components/brand/ParkEaseAnimatedLogo';
+import { getAuthErrorMessage } from '../utils/authError';
 
 export const VerifyEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -134,9 +135,8 @@ export const VerifyEmailPage: React.FC = () => {
       setTimeout(() => {
         navigate('/profile');
       }, 2000);
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Verification failed. Please try again.';
-      setError(msg);
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, 'Verification failed. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -155,9 +155,8 @@ export const VerifyEmailPage: React.FC = () => {
       setCooldown(60);
       setOtp(Array(6).fill(''));
       inputRefs.current[0]?.focus();
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Failed to resend code. Please wait.';
-      setError(msg);
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, 'Failed to resend verification code. Please try again.'));
     } finally {
       setIsResending(false);
     }
