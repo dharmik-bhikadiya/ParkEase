@@ -357,8 +357,26 @@ export const MyBookingsPage: React.FC = () => {
                     />
                   </div>
 
+                  {/* Booking Metadata Pill */}
+                  <div className="bg-[#F7F9F5] p-3 rounded-2xl border border-gray-100 text-xs font-semibold text-gray-700 text-left space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Assigned Bay</span>
+                      <span className="font-extrabold text-[#176B4D]">
+                        {selectedBookingForQr.slotNumber || 'BAY A-101'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Vehicle Tag</span>
+                      <span className="font-mono font-bold">{selectedBookingForQr.vehicleNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Location</span>
+                      <span className="truncate max-w-[150px]">{selectedBookingForQr.locationName || 'ParkEase'}</span>
+                    </div>
+                  </div>
+
                   <div>
-                    <span className="text-xs font-mono text-gray-400 block truncate px-4">
+                    <span className="text-[10px] font-mono text-gray-400 block truncate px-2">
                       {activeQrPass.qr_payload.substring(0, 32)}...
                     </span>
                     <div className="mt-2 flex items-center justify-center gap-2">
@@ -378,10 +396,20 @@ export const MyBookingsPage: React.FC = () => {
                 <p className="text-xs text-gray-500 py-6">No QR pass generated yet.</p>
               )}
 
-              <Button variant="outline" onClick={() => setSelectedBookingForQr(null)} className="w-full">
-                Close
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="primary"
+                  onClick={() => window.print()}
+                  className="w-1/2 bg-[#176B4D] hover:bg-[#12543c] text-white font-bold text-xs"
+                >
+                  Print / Save Pass
+                </Button>
+                <Button variant="outline" onClick={() => setSelectedBookingForQr(null)} className="w-1/2 text-xs">
+                  Close
+                </Button>
+              </div>
             </motion.div>
+
           </div>
         )}
       </AnimatePresence>

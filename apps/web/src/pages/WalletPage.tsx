@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Wallet as WalletIcon,
   PlusCircle,
@@ -30,6 +31,16 @@ export const WalletPage: React.FC = () => {
   const [submittingTopup, setSubmittingTopup] = useState<boolean>(false);
   const [topupSuccess, setTopupSuccess] = useState<string | null>(null);
 
+  // Top-Up Extended State (QR, UPI ID, Card, Bank)
+  const [upiSubMode, setUpiSubMode] = useState<'QR' | 'ID'>('QR');
+  const [topupUpiId, setTopupUpiId] = useState('');
+  const [topupCardNumber, setTopupCardNumber] = useState('');
+  const [topupCardExpiry, setTopupCardExpiry] = useState('');
+  const [topupCardCvv, setTopupCardCvv] = useState('');
+  const [topupBank, setTopupBank] = useState('HDFC');
+  const [topupCountdown, setTopupCountdown] = useState(300);
+
+
   const fetchWalletData = async () => {
     setLoading(true);
     try {
@@ -49,6 +60,15 @@ export const WalletPage: React.FC = () => {
   useEffect(() => {
     fetchWalletData();
   }, []);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showTopupModal && paymentMethod === 'UPI' && upiSubMode === 'QR' && topupCountdown > 0) {
+      timer = setInterval(() => setTopupCountdown((c) => c - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [showTopupModal, paymentMethod, upiSubMode, topupCountdown]);
+
 
   const handleTopup = async () => {
     if (topupAmount <= 0) {
@@ -300,7 +320,7 @@ export const WalletPage: React.FC = () => {
                       }`}
                     >
                       <Zap className="w-5 h-5 mx-auto text-[#176B4D]" />
-                      <span>UPI Instant</span>
+                      <span>UPI / QR</span>
                     </button>
 
                     <button
@@ -330,6 +350,129 @@ export const WalletPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* METHOD SPECIFIC ACCORDION / PANELS */}
+                <div className="p-4 bg-[#F7F9F5] rounded-2xl border border-gray-200 space-y-3">
+                  {/* UPI MODE */}
+                  {paymentMethod === 'UPI' && (
+                    <div className="space-y-3">
+                      <div className="flex bg-white p-1 rounded-xl border border-gray-200">
+                        <button
+                          type="button"
+                          onClick={() => setUpiSubMode('QR')}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                            upiSubMode === 'QR' ? 'bg-[#176B4D] text-white' : 'text-gray-600'
+                          }`}
+                        >
+                          Scan UPI QR
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUpiSubMode('ID')}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                            upiSubMode === 'ID' ? 'bg-[#176B4D] text-white' : 'text-gray-600'
+                          }`}
+                        >
+                          Enter UPI ID
+                        </button>
+                      </div>
+
+                      {upiSubMode === 'QR' ? (
+                        <div className="text-center py-2 space-y-2">
+                          <div className="p-3 bg-white rounded-2xl border border-gray-200 inline-block shadow-xs">
+                            <QRCodeSVG
+                              value={`upi://pay?pa=parkease.wallet@okhdfcbank&pn=ParkEase%20Wallet&am=${topupAmount}&cu=INR&tn=Wallet%20Topup`}
+                              size={140}
+                              level="H"
+                            />
+                          </div>
+                          <p className="text-[11px] text-gray-500 font-medium">
+                            Scan with GPay, PhonePe, Paytm, or BHIM to add ₹{topupAmount}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-gray-600 uppercase">Your UPI ID</label>
+                          <input
+                            type="text"
+                            value={topupUpiId}
+                            onChange={(e) => setTopupUpiId(e.target.value)}
+                            placeholder="e.g. mobile@ybl or username@okhdfcbank"
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* CARD MODE */}
+                  {paymentMethod === 'CARD' && (
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-600 uppercase">Card Number</label>
+                        <input
+                          type="text"
+                          maxLength={19}
+                          value={topupCardNumber}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 16);
+                            const chunks = val.match(/.{1,4}/g);
+                            setTopupCardNumber(chunks ? chunks.join(' ') : val);
+                          }}
+                          placeholder="4532 •••• •••• 8901"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-mono font-bold focus:outline-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 uppercase">Expiry (MM/YY)</label>
+                          <input
+                            type="text"
+                            maxLength={5}
+                            value={topupCardExpiry}
+                            onChange={(e) => setTopupCardExpiry(e.target.value)}
+                            placeholder="12/28"
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-mono font-bold focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 uppercase">CVV</label>
+                          <input
+                            type="password"
+                            maxLength={4}
+                            value={topupCardCvv}
+                            onChange={(e) => setTopupCardCvv(e.target.value)}
+                            placeholder="•••"
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-mono font-bold focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NETBANKING MODE */}
+                  {paymentMethod === 'NETBANKING' && (
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold text-gray-600 uppercase">Select Bank</label>
+                      <div className="grid grid-cols-3 gap-1.5 text-xs">
+                        {['HDFC Bank', 'State Bank', 'ICICI Bank', 'Axis Bank', 'Kotak', 'PNB'].map((b) => (
+                          <button
+                            key={b}
+                            type="button"
+                            onClick={() => setTopupBank(b)}
+                            className={`p-2 rounded-xl border text-center font-bold text-[11px] transition-all ${
+                              topupBank === b
+                                ? 'bg-white border-[#176B4D] text-[#176B4D] shadow-2xs'
+                                : 'bg-white/60 border-gray-200 text-gray-600'
+                            }`}
+                          >
+                            {b}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -342,10 +485,11 @@ export const WalletPage: React.FC = () => {
                   disabled={submittingTopup}
                   className="w-1/2 bg-[#176B4D] hover:bg-[#12543c] text-white font-bold"
                 >
-                  {submittingTopup ? 'Processing...' : `Add ₹${topupAmount}`}
+                  {submittingTopup ? 'Processing...' : `Add ₹${topupAmount} to Wallet`}
                 </Button>
               </div>
             </motion.div>
+
           </div>
         )}
       </AnimatePresence>

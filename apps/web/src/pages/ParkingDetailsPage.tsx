@@ -19,9 +19,12 @@ import {
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { parkingApi } from '../api/parkingApi';
-import { bookingApi } from '../api/booking';
 import { useAuth } from '../context/AuthContext';
 import { ParkingLocation, ParkingSlot, SlotStatus } from '@parkease/shared';
+import { CheckoutModal } from '../components/payment/CheckoutModal';
+import { QrPassItem } from '../api/qrApi';
+import { QRCodeSVG } from 'qrcode.react';
+import { ShieldCheck } from 'lucide-react';
 
 export const ParkingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,13 +37,16 @@ export const ParkingDetailsPage: React.FC = () => {
   const [showSlotsModal, setShowSlotsModal] = useState<boolean>(false);
   const [activeFloorFilter, setActiveFloorFilter] = useState<string>('ALL');
 
-  // Booking Modal State
+  // Booking & Payment State
   const [selectedSlot, setSelectedSlot] = useState<ParkingSlot | null>(null);
   const [vehicleNumber, setVehicleNumber] = useState<string>('GJ01AB1234');
   const [durationHours, setDurationHours] = useState<number>(2);
-  const [submittingBooking, setSubmittingBooking] = useState<boolean>(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState<boolean>(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingSuccessData, setBookingSuccessData] = useState<any | null>(null);
+  const [bookingSuccessQrPass, setBookingSuccessQrPass] = useState<QrPassItem | null>(null);
+
+
 
   useEffect(() => {
     const loadDetails = async () => {
@@ -101,39 +107,30 @@ export const ParkingDetailsPage: React.FC = () => {
     setBookingError(null);
   };
 
-  const handleConfirmReservation = async () => {
+  const handleProceedToPayment = () => {
     if (!selectedSlot || !parking) return;
     if (!vehicleNumber.trim()) {
       setBookingError('Please enter a valid vehicle registration number');
       return;
     }
-
-    setSubmittingBooking(true);
     setBookingError(null);
+    setShowCheckoutModal(true);
+  };
 
-    const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + durationHours * 60 * 60 * 1000);
-
+  const handleCheckoutSuccess = async (booking: any, entryPass: QrPassItem | null) => {
+    setBookingSuccessData(booking);
+    setBookingSuccessQrPass(entryPass);
+    setShowCheckoutModal(false);
+    setSelectedSlot(null);
+    // Reload slots
     try {
-      const result = await bookingApi.createBooking({
-        location_id: parking.id,
-        slot_id: selectedSlot.id,
-        vehicle_number: vehicleNumber.toUpperCase().trim(),
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-      });
-
-      setBookingSuccessData(result);
-      setSelectedSlot(null);
-      // Reload slots
       const updatedSlots = await parkingApi.getSlots(parking.id);
       setSlots(updatedSlots);
-    } catch (err: any) {
-      setBookingError(err?.message || 'Failed to create reservation. Please try again.');
-    } finally {
-      setSubmittingBooking(false);
+    } catch {
+      // Ignore
     }
   };
+
 
   return (
     <div className="min-h-screen bg-[#F7F9F5] py-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-8">
@@ -485,16 +482,15 @@ export const ParkingDetailsPage: React.FC = () => {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button variant="outline" onClick={() => setSelectedSlot(null)} className="w-1/2">
+                <Button variant="outline" onClick={() => setSelectedSlot(null)} className="w-1/3">
                   Cancel
                 </Button>
                 <Button
                   variant="primary"
-                  onClick={handleConfirmReservation}
-                  disabled={submittingBooking}
-                  className="w-1/2 bg-[#176B4D] hover:bg-[#12543c] text-white font-bold"
+                  onClick={handleProceedToPayment}
+                  className="w-2/3 bg-[#176B4D] hover:bg-[#12543c] text-white font-bold flex items-center justify-center gap-2"
                 >
-                  {submittingBooking ? 'Confirming...' : 'Confirm Reservation'}
+                  Proceed to Payment (₹{durationHours * pricing.carHourlyPrice}) →
                 </Button>
               </div>
             </motion.div>
@@ -502,25 +498,57 @@ export const ParkingDetailsPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 5. BOOKING SUCCESS CONFIRMATION MODAL */}
+      {/* CHECKOUT & MULTI-PAYMENT MODAL */}
+      {selectedSlot && (
+        <CheckoutModal
+          isOpen={showCheckoutModal}
+          onClose={() => setShowCheckoutModal(false)}
+          slot={selectedSlot}
+          parking={parking}
+          durationHours={durationHours}
+          vehicleNumber={vehicleNumber}
+          totalAmount={durationHours * pricing.carHourlyPrice}
+          onSuccess={handleCheckoutSuccess}
+        />
+      )}
+
+      {/* 5. BOOKING SUCCESS CONFIRMATION MODAL WITH ENTRY QR PASS */}
       <AnimatePresence>
         {bookingSuccessData && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 text-center space-y-5"
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 text-center space-y-4 my-8"
             >
-              <div className="w-16 h-16 bg-emerald-100 text-[#176B4D] rounded-full flex items-center justify-center mx-auto shadow-inner">
-                <CheckCircle2 className="w-10 h-10" />
+              <div className="w-14 h-14 bg-emerald-100 text-[#176B4D] rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle2 className="w-8 h-8" />
               </div>
               <div>
-                <h3 className="text-2xl font-extrabold text-[#18342A]">Reservation Confirmed!</h3>
-                <p className="text-xs text-gray-500 font-medium mt-1">
-                  Your parking slot has been reserved successfully.
+                <h3 className="text-2xl font-black text-[#18342A]">Reservation & Gate Pass Confirmed!</h3>
+                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                  Your spot is secured. Present this Entry QR Pass at the barrier gate.
                 </p>
               </div>
+
+              {/* Scannable Entry QR Pass */}
+              {bookingSuccessQrPass && (
+                <div className="py-2 space-y-2">
+                  <div className="p-3.5 bg-white rounded-2xl border-2 border-[#176B4D] inline-block shadow-md">
+                    <QRCodeSVG
+                      value={bookingSuccessQrPass.qr_payload}
+                      size={150}
+                      level="H"
+                      includeMargin={false}
+                    />
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Touchless Barrier Gate Entry Pass</span>
+                  </div>
+                </div>
+              )}
 
               <div className="p-4 bg-[#F7F9F5] rounded-2xl border border-gray-200 text-left space-y-2 text-xs font-semibold text-gray-700">
                 <div className="flex justify-between border-b border-gray-200 pb-2">
@@ -532,20 +560,20 @@ export const ParkingDetailsPage: React.FC = () => {
                   <span className="text-[#176B4D] font-extrabold">{bookingSuccessData.slot_number || 'A-101'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Vehicle</span>
-                  <span>{bookingSuccessData.vehicle_number}</span>
+                  <span className="text-gray-400">Vehicle Plate</span>
+                  <span className="font-mono font-bold text-gray-900">{bookingSuccessData.vehicle_number}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Total Hours</span>
+                  <span className="text-gray-400">Reserved Duration</span>
                   <span>{bookingSuccessData.total_hours} Hours</span>
                 </div>
                 <div className="flex justify-between border-t border-gray-200 pt-2 text-sm font-extrabold">
-                  <span className="text-gray-900">Total Amount</span>
+                  <span className="text-gray-900">Total Paid</span>
                   <span className="text-[#176B4D]">₹{bookingSuccessData.total_amount}</span>
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <Button variant="outline" onClick={() => setBookingSuccessData(null)} className="w-1/2">
                   Close
                 </Button>
@@ -557,7 +585,7 @@ export const ParkingDetailsPage: React.FC = () => {
                   }}
                   className="w-1/2 bg-[#176B4D] hover:bg-[#12543c] text-white font-bold"
                 >
-                  View My Bookings
+                  View in My Bookings
                 </Button>
               </div>
             </motion.div>
@@ -567,3 +595,4 @@ export const ParkingDetailsPage: React.FC = () => {
     </div>
   );
 };
+
