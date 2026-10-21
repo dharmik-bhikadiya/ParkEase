@@ -17,6 +17,7 @@ import {
   Layers,
   Car,
   Building2,
+  Bike,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -41,10 +42,12 @@ const CITY_OPTIONS: DropdownOption[] = [
 
 const VEHICLE_TYPE_OPTIONS: DropdownOption[] = [
   { value: 'ALL', label: 'All Vehicles', description: 'Show all parking spots', icon: <Car className="w-4 h-4" /> },
-  { value: 'CAR', label: 'Car / Sedan / SUV', description: '4-Wheeler parking slots', icon: <Car className="w-4 h-4" /> },
-  { value: 'BIKE', label: 'Motorbike / Scooter', description: '2-Wheeler parking slots' },
+  { value: 'BIKE', label: 'Motorbike / Scooter (2W)', description: '2-Wheeler parking slots', icon: <Bike className="w-4 h-4 text-[#176B4D]" /> },
+  { value: 'CAR', label: 'Car / Sedan (Standard)', description: '4-Wheeler standard parking', icon: <Car className="w-4 h-4 text-[#176B4D]" /> },
+  { value: 'SUV', label: 'SUV / Large Vehicle', description: 'Spacious 4-wheeler slots', icon: <Car className="w-4 h-4 text-[#176B4D]" /> },
   { value: 'EV', label: 'EV Electric Vehicle', description: 'Spots with charging stations', icon: <Zap className="w-4 h-4 text-emerald-600" /> },
 ];
+
 
 const PARKING_TYPE_OPTIONS: DropdownOption[] = [
   { value: 'ALL', label: 'All Categories', description: 'Malls, Stations, Airports & more', icon: <Building2 className="w-4 h-4" /> },
@@ -197,9 +200,38 @@ export const FindParkingPage: React.FC = () => {
             </div>
           </form>
         </Card>
+
+        {/* Quick Vehicle Type Selector Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+            <Car className="w-3.5 h-3.5 text-[#176B4D]" /> Vehicle:
+          </span>
+          {[
+            { id: 'ALL', label: 'All Vehicles', icon: <Car className="w-3.5 h-3.5" /> },
+            { id: 'BIKE', label: 'Bike (2-Wheeler)', icon: <Bike className="w-3.5 h-3.5" /> },
+            { id: 'CAR', label: 'Car (Standard)', icon: <Car className="w-3.5 h-3.5" /> },
+            { id: 'SUV', label: 'SUV / Large', icon: <Car className="w-3.5 h-3.5" /> },
+            { id: 'EV', label: 'EV Electric', icon: <Zap className="w-3.5 h-3.5 text-emerald-600" /> },
+          ].map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => setSelectedVehicleType(v.id)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
+                selectedVehicleType === v.id
+                  ? 'bg-[#176B4D] text-white shadow-xs ring-2 ring-[#72C98B]/40'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-[#176B4D] hover:bg-gray-50'
+              }`}
+            >
+              {v.icon}
+              <span>{v.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 2. FILTER COLLAPSIBLE PANEL */}
+
       <AnimatePresence>
         {isFilterOpen && (
           <motion.div
@@ -353,9 +385,15 @@ export const FindParkingPage: React.FC = () => {
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-4">
             {locations.map((spot) => {
-              const startingPrice = spot.pricing?.carHourlyPrice || 20;
+              const getVehiclePriceInfo = () => {
+                if (selectedVehicleType === 'BIKE') return { price: spot.pricing?.bikeHourlyPrice || 10, label: 'Bike' };
+                if (selectedVehicleType === 'SUV') return { price: spot.pricing?.suvHourlyPrice || 30, label: 'SUV' };
+                if (selectedVehicleType === 'EV') return { price: spot.pricing?.evHourlyPrice || 25, label: 'EV' };
+                return { price: spot.pricing?.carHourlyPrice || 20, label: 'Car' };
+              };
+              const { price: dynamicPrice, label: dynamicLabel } = getVehiclePriceInfo();
 
               return (
                 <motion.div
@@ -363,7 +401,10 @@ export const FindParkingPage: React.FC = () => {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  onClick={() => navigate(`/parking/${spot.id}`)}
+                  onClick={() => {
+                    const targetUrl = selectedVehicleType !== 'ALL' ? `/parking/${spot.id}?vehicleType=${selectedVehicleType}` : `/parking/${spot.id}`;
+                    navigate(targetUrl);
+                  }}
                   className="cursor-pointer"
                 >
                   <Card
@@ -419,9 +460,10 @@ export const FindParkingPage: React.FC = () => {
                           </span>
                           <span className="text-gray-300">•</span>
                           <span className="font-extrabold text-[#18342A]">
-                            From ₹{startingPrice}/hr
+                            From ₹{dynamicPrice}/hr <span className="text-[11px] text-[#176B4D] font-bold">({dynamicLabel})</span>
                           </span>
                         </div>
+
 
                         {/* Amenities List */}
                         <div className="flex items-center gap-3 text-[11px] font-semibold text-gray-600 pt-2 border-t border-gray-100">
@@ -457,7 +499,8 @@ export const FindParkingPage: React.FC = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/parking/${spot.id}`);
+                              const targetUrl = selectedVehicleType !== 'ALL' ? `/parking/${spot.id}?vehicleType=${selectedVehicleType}` : `/parking/${spot.id}`;
+                              navigate(targetUrl);
                             }}
                             className="bg-[#176B4D] hover:bg-[#12543c] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1 shadow-xs"
                           >

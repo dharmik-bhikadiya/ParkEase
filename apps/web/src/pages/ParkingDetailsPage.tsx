@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin,
@@ -29,7 +29,13 @@ import { ShieldCheck } from 'lucide-react';
 export const ParkingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+
+  const initialVehicle = searchParams.get('vehicleType')?.toUpperCase();
+  const validVehicle = (initialVehicle && ['BIKE', 'CAR', 'SUV', 'EV'].includes(initialVehicle))
+    ? (initialVehicle as 'BIKE' | 'CAR' | 'SUV' | 'EV')
+    : 'CAR';
 
   const [parking, setParking] = useState<ParkingLocation | null>(null);
   const [slots, setSlots] = useState<ParkingSlot[]>([]);
@@ -38,6 +44,8 @@ export const ParkingDetailsPage: React.FC = () => {
   const [activeFloorFilter, setActiveFloorFilter] = useState<string>('ALL');
 
   // Booking & Payment State
+  const [selectedVehicleType, setSelectedVehicleType] = useState<'BIKE' | 'CAR' | 'SUV' | 'EV'>(validVehicle);
+  const [slotVehicleFilter, setSlotVehicleFilter] = useState<string>(validVehicle !== 'CAR' ? validVehicle : 'ALL');
   const [selectedSlot, setSelectedSlot] = useState<ParkingSlot | null>(null);
   const [vehicleNumber, setVehicleNumber] = useState<string>('GJ01AB1234');
   const [durationHours, setDurationHours] = useState<number>(2);
@@ -45,8 +53,6 @@ export const ParkingDetailsPage: React.FC = () => {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingSuccessData, setBookingSuccessData] = useState<any | null>(null);
   const [bookingSuccessQrPass, setBookingSuccessQrPass] = useState<QrPassItem | null>(null);
-
-
 
   useEffect(() => {
     const loadDetails = async () => {
@@ -93,15 +99,36 @@ export const ParkingDetailsPage: React.FC = () => {
     evHourlyPrice: 25,
   };
 
+  const getHourlyRateForVehicle = (vType: 'BIKE' | 'CAR' | 'SUV' | 'EV') => {
+    switch (vType) {
+      case 'BIKE':
+        return pricing.bikeHourlyPrice;
+      case 'SUV':
+        return pricing.suvHourlyPrice;
+      case 'EV':
+        return pricing.evHourlyPrice;
+      case 'CAR':
+      default:
+        return pricing.carHourlyPrice;
+    }
+  };
+  const activeHourlyRate = getHourlyRateForVehicle(selectedVehicleType);
+
   const floors = Array.from(new Set(slots.map((s) => s.floor || 'Ground')));
-  const filteredSlots = activeFloorFilter === 'ALL' ? slots : slots.filter((s) => s.floor === activeFloorFilter);
+  const filteredSlots = slots
+    .filter((s) => (activeFloorFilter === 'ALL' ? true : s.floor === activeFloorFilter))
+    .filter((s) => (slotVehicleFilter === 'ALL' ? true : s.vehicleType === slotVehicleFilter));
   const availableSlotsCount = slots.filter((s) => s.status === SlotStatus.AVAILABLE).length;
+
 
   const handleSelectSlotForBooking = (slot: ParkingSlot) => {
     if (slot.status !== SlotStatus.AVAILABLE) return;
     if (!user) {
       navigate('/login');
       return;
+    }
+    if (slot.vehicleType && ['BIKE', 'CAR', 'SUV', 'EV'].includes(slot.vehicleType.toUpperCase())) {
+      setSelectedVehicleType(slot.vehicleType.toUpperCase() as any);
     }
     setSelectedSlot(slot);
     setBookingError(null);
@@ -175,9 +202,11 @@ export const ParkingDetailsPage: React.FC = () => {
           <Card className="p-6 bg-white border border-[#E8F6EC] shadow-sm rounded-3xl space-y-5">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div>
-                <span className="text-xs font-semibold text-gray-500">Starting From</span>
+                <span className="text-xs font-semibold text-gray-500">
+                  Rate for {selectedVehicleType === 'BIKE' ? 'Bike (2W)' : selectedVehicleType === 'SUV' ? 'SUV / Large' : selectedVehicleType === 'EV' ? 'EV Vehicle' : 'Car (Standard)'}
+                </span>
                 <div className="text-3xl font-extrabold text-[#18342A]">
-                  ₹{pricing.carHourlyPrice}
+                  ₹{activeHourlyRate}
                   <span className="text-sm font-normal text-gray-500">/hr</span>
                 </div>
               </div>
@@ -233,40 +262,51 @@ export const ParkingDetailsPage: React.FC = () => {
           </Card>
 
           <Card className="p-6 bg-white border border-[#E8F6EC] shadow-sm rounded-3xl space-y-4">
-            <h3 className="text-lg font-bold text-[#18342A] flex items-center gap-2">
-              <Car className="w-5 h-5 text-[#176B4D]" /> Vehicle Hourly Rates
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-[#18342A] flex items-center gap-2">
+                <Car className="w-5 h-5 text-[#176B4D]" /> Select Vehicle Type
+              </h3>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+                Click any vehicle to switch rate
+              </span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-4 bg-[#F7F9F5] rounded-2xl border border-[#E8F6EC] text-center space-y-1">
-                <Bike className="w-5 h-5 text-[#176B4D] mx-auto" />
-                <span className="text-xs font-semibold text-gray-500 block">Bike</span>
-                <span className="text-lg font-extrabold text-[#18342A]">₹{pricing.bikeHourlyPrice}</span>
-                <span className="text-[10px] text-gray-400 block">/ hour</span>
-              </div>
-
-              <div className="p-4 bg-[#E8F6EC] rounded-2xl border border-[#72C98B]/50 text-center space-y-1">
-                <Car className="w-5 h-5 text-[#176B4D] mx-auto" />
-                <span className="text-xs font-semibold text-[#176B4D] block">Car (Standard)</span>
-                <span className="text-lg font-extrabold text-[#18342A]">₹{pricing.carHourlyPrice}</span>
-                <span className="text-[10px] text-[#176B4D] block">/ hour</span>
-              </div>
-
-              <div className="p-4 bg-[#F7F9F5] rounded-2xl border border-[#E8F6EC] text-center space-y-1">
-                <Car className="w-5 h-5 text-[#176B4D] mx-auto scale-110" />
-                <span className="text-xs font-semibold text-gray-500 block">SUV / Large</span>
-                <span className="text-lg font-extrabold text-[#18342A]">₹{pricing.suvHourlyPrice}</span>
-                <span className="text-[10px] text-gray-400 block">/ hour</span>
-              </div>
-
-              <div className="p-4 bg-[#F7F9F5] rounded-2xl border border-[#E8F6EC] text-center space-y-1">
-                <Zap className="w-5 h-5 text-emerald-600 mx-auto" />
-                <span className="text-xs font-semibold text-gray-500 block">EV Vehicle</span>
-                <span className="text-lg font-extrabold text-[#18342A]">₹{pricing.evHourlyPrice}</span>
-                <span className="text-[10px] text-gray-400 block">/ hour</span>
-              </div>
+              {[
+                { id: 'BIKE', label: 'Bike', rate: pricing.bikeHourlyPrice, icon: <Bike className="w-5 h-5" /> },
+                { id: 'CAR', label: 'Car (Standard)', rate: pricing.carHourlyPrice, icon: <Car className="w-5 h-5" /> },
+                { id: 'SUV', label: 'SUV / Large', rate: pricing.suvHourlyPrice, icon: <Car className="w-5 h-5 scale-110" /> },
+                { id: 'EV', label: 'EV Vehicle', rate: pricing.evHourlyPrice, icon: <Zap className="w-5 h-5 text-emerald-600" /> },
+              ].map((v) => {
+                const isSelected = selectedVehicleType === v.id;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setSelectedVehicleType(v.id as any)}
+                    className={`p-4 rounded-2xl border text-center space-y-1 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#E8F6EC] border-[#176B4D] ring-2 ring-[#72C98B]/50 shadow-sm'
+                        : 'bg-[#F7F9F5] border-[#E8F6EC] hover:border-[#72C98B]/50 hover:bg-white'
+                    }`}
+                  >
+                    <div className={`mx-auto flex items-center justify-center ${isSelected ? 'text-[#176B4D]' : 'text-gray-500'}`}>
+                      {v.icon}
+                    </div>
+                    <span className={`text-xs font-bold block ${isSelected ? 'text-[#176B4D]' : 'text-gray-600'}`}>{v.label}</span>
+                    <span className="text-lg font-extrabold text-[#18342A]">₹{v.rate}</span>
+                    <span className="text-[10px] text-gray-400 block">/ hour</span>
+                    {isSelected && (
+                      <span className="inline-block mt-1 px-2.5 py-0.5 bg-[#176B4D] text-white text-[10px] font-bold rounded-full">
+                        Selected
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </Card>
         </div>
+
 
         <div className="lg:col-span-5 space-y-6">
           <Card className="p-6 bg-white border border-[#E8F6EC] shadow-sm rounded-3xl space-y-4">
@@ -330,34 +370,62 @@ export const ParkingDetailsPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Floor Tabs Filter */}
-              {floors.length > 1 && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setActiveFloorFilter('ALL')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl border ${
-                      activeFloorFilter === 'ALL'
-                        ? 'bg-[#176B4D] text-white border-[#176B4D]'
-                        : 'bg-white text-gray-600 border-gray-200'
-                    }`}
-                  >
-                    All Floors
-                  </button>
-                  {floors.map((f) => (
+              {/* Filters: Vehicle Type & Floor */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Vehicle Filter Tabs */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-bold text-gray-500 mr-1">Vehicle:</span>
+                  {[
+                    { id: 'ALL', label: 'All' },
+                    { id: 'CAR', label: 'Car' },
+                    { id: 'BIKE', label: 'Bike' },
+                    { id: 'SUV', label: 'SUV' },
+                    { id: 'EV', label: 'EV' },
+                  ].map((v) => (
                     <button
-                      key={f}
-                      onClick={() => setActiveFloorFilter(f)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl border ${
-                        activeFloorFilter === f
+                      key={v.id}
+                      onClick={() => setSlotVehicleFilter(v.id)}
+                      className={`px-3 py-1 text-xs font-bold rounded-xl border transition-all ${
+                        slotVehicleFilter === v.id
                           ? 'bg-[#176B4D] text-white border-[#176B4D]'
-                          : 'bg-white text-gray-600 border-gray-200'
+                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                       }`}
                     >
-                      {f}
+                      {v.label}
                     </button>
                   ))}
                 </div>
-              )}
+
+                {/* Floor Tabs Filter */}
+                {floors.length > 1 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-gray-500 mr-1">Floor:</span>
+                    <button
+                      onClick={() => setActiveFloorFilter('ALL')}
+                      className={`px-3 py-1 text-xs font-bold rounded-xl border ${
+                        activeFloorFilter === 'ALL'
+                          ? 'bg-[#18342A] text-white border-[#18342A]'
+                          : 'bg-white text-gray-600 border-gray-200'
+                      }`}
+                    >
+                      All Floors
+                    </button>
+                    {floors.map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setActiveFloorFilter(f)}
+                        className={`px-3 py-1 text-xs font-bold rounded-xl border ${
+                          activeFloorFilter === f
+                            ? 'bg-[#18342A] text-white border-[#18342A]'
+                            : 'bg-white text-gray-600 border-gray-200'
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Slot Grid */}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
@@ -378,11 +446,14 @@ export const ParkingDetailsPage: React.FC = () => {
                           handleSelectSlotForBooking(slot);
                         }
                       }}
-                      className={`p-3 rounded-2xl border text-center font-extrabold transition-all shadow-xs space-y-0.5 ${bgStyle}`}
+                      className={`p-3 rounded-2xl border text-center font-extrabold transition-all shadow-xs space-y-1 ${bgStyle}`}
                     >
-                      <span className="text-xs uppercase tracking-wider block font-bold text-gray-400">
-                        {slot.floor}
-                      </span>
+                      <div className="flex items-center justify-between text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                        <span>{slot.floor}</span>
+                        <span className="px-1.5 py-0.2 bg-white/70 rounded text-[9px] text-[#176B4D]">
+                          {slot.vehicleType || 'CAR'}
+                        </span>
+                      </div>
                       <div className="text-lg">{slot.slotNumber}</div>
                       <span className="text-[10px] uppercase font-bold block">{slot.status}</span>
                     </div>
@@ -407,7 +478,7 @@ export const ParkingDetailsPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <div>
                   <h3 className="text-xl font-extrabold text-[#18342A]">Reserve Slot {selectedSlot.slotNumber}</h3>
-                  <p className="text-xs text-gray-500">{parking.name}</p>
+                  <p className="text-xs text-gray-500">{parking.name} • Floor {selectedSlot.floor}</p>
                 </div>
                 <button onClick={() => setSelectedSlot(null)} className="p-2 text-gray-400 hover:text-gray-600">
                   <X className="w-5 h-5" />
@@ -422,6 +493,43 @@ export const ParkingDetailsPage: React.FC = () => {
               )}
 
               <div className="space-y-4">
+                {/* Vehicle Category Selector */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Select Vehicle Type & Rate
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { type: 'BIKE' as const, label: 'Bike (2W)', price: pricing.bikeHourlyPrice, icon: Bike },
+                      { type: 'CAR' as const, label: 'Car Standard', price: pricing.carHourlyPrice, icon: Car },
+                      { type: 'SUV' as const, label: 'SUV / Large', price: pricing.suvHourlyPrice, icon: Car },
+                      { type: 'EV' as const, label: 'EV Electric', price: pricing.evHourlyPrice, icon: Zap },
+                    ].map((item) => {
+                      const IconComp = item.icon;
+                      const isSelected = selectedVehicleType === item.type;
+                      return (
+                        <button
+                          key={item.type}
+                          type="button"
+                          onClick={() => setSelectedVehicleType(item.type)}
+                          className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                            isSelected
+                              ? 'bg-[#E8F6EC] border-[#176B4D] ring-2 ring-[#176B4D]/20 text-[#176B4D]'
+                              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <IconComp className={`w-4 h-4 ${isSelected ? 'text-[#176B4D]' : 'text-gray-400'}`} />
+                            {isSelected && <span className="w-2 h-2 rounded-full bg-[#176B4D]" />}
+                          </div>
+                          <div className="text-xs font-bold truncate">{item.label}</div>
+                          <div className="text-[11px] font-extrabold mt-0.5 text-gray-900">₹{item.price}/hr</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Vehicle Input */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
@@ -465,8 +573,14 @@ export const ParkingDetailsPage: React.FC = () => {
                 {/* Cost Estimation Breakdown */}
                 <div className="p-4 bg-[#F7F9F5] rounded-2xl border border-gray-200 space-y-2 text-xs font-medium text-gray-600">
                   <div className="flex justify-between">
+                    <span>Vehicle Category</span>
+                    <span className="font-bold text-gray-800">
+                      {selectedVehicleType === 'BIKE' ? 'Bike (Two Wheeler)' : selectedVehicleType === 'SUV' ? 'SUV / Large Vehicle' : selectedVehicleType === 'EV' ? 'Electric Vehicle (EV)' : 'Car (Standard)'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
                     <span>Hourly Rate</span>
-                    <span className="font-bold text-gray-800">₹{pricing.carHourlyPrice} / hr</span>
+                    <span className="font-bold text-gray-800">₹{activeHourlyRate} / hr</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Selected Duration</span>
@@ -475,7 +589,7 @@ export const ParkingDetailsPage: React.FC = () => {
                   <div className="flex justify-between border-t border-gray-200 pt-2 text-sm">
                     <span className="font-extrabold text-[#18342A]">Total Amount Payable</span>
                     <span className="font-extrabold text-xl text-[#176B4D]">
-                      ₹{durationHours * pricing.carHourlyPrice}
+                      ₹{durationHours * activeHourlyRate}
                     </span>
                   </div>
                 </div>
@@ -490,7 +604,7 @@ export const ParkingDetailsPage: React.FC = () => {
                   onClick={handleProceedToPayment}
                   className="w-2/3 bg-[#176B4D] hover:bg-[#12543c] text-white font-bold flex items-center justify-center gap-2"
                 >
-                  Proceed to Payment (₹{durationHours * pricing.carHourlyPrice}) →
+                  Proceed to Payment (₹{durationHours * activeHourlyRate}) →
                 </Button>
               </div>
             </motion.div>
@@ -507,7 +621,7 @@ export const ParkingDetailsPage: React.FC = () => {
           parking={parking}
           durationHours={durationHours}
           vehicleNumber={vehicleNumber}
-          totalAmount={durationHours * pricing.carHourlyPrice}
+          totalAmount={durationHours * activeHourlyRate}
           onSuccess={handleCheckoutSuccess}
         />
       )}

@@ -85,7 +85,18 @@ class BookingService:
             ParkingPricing.parking_location_id == data.location_id
         ).first()
 
-        hourly_rate = pricing.car_hourly_price if pricing else location.hourly_rate
+        hourly_rate = location.hourly_rate
+        if pricing:
+            v_type = str(slot.vehicle_type.value if hasattr(slot.vehicle_type, 'value') else slot.vehicle_type).upper()
+            if "BIKE" in v_type:
+                hourly_rate = pricing.bike_hourly_price
+            elif "SUV" in v_type:
+                hourly_rate = pricing.suv_hourly_price
+            elif "EV" in v_type:
+                hourly_rate = pricing.ev_hourly_price
+            else:
+                hourly_rate = pricing.car_hourly_price
+
         total_amount = round(total_hours * hourly_rate, 2)
 
         # Create Booking
