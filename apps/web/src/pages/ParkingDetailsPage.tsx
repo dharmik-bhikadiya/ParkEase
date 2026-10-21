@@ -468,12 +468,12 @@ export const ParkingDetailsPage: React.FC = () => {
       {/* 4. RESERVATION DRAWER / MODAL */}
       <AnimatePresence>
         {selectedSlot && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-6"
+              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <div>

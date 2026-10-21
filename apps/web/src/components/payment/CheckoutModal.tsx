@@ -228,39 +228,41 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs p-2 sm:p-4 md:p-6 flex items-center justify-center min-h-screen">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-[#E8F6EC] my-8"
+        className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-[#E8F6EC] my-auto overflow-hidden"
       >
-        {/* Header */}
-        <div className="bg-[#18342A] text-white p-5 sm:p-6 flex items-center justify-between">
-          <div className="space-y-1">
+        {/* Header - Fixed at Top */}
+        <div className="bg-[#18342A] text-white px-5 py-3.5 sm:px-6 sm:py-4 flex items-center justify-between shrink-0">
+          <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-md bg-[#176B4D] text-[#72C98B] font-mono text-[11px] font-bold uppercase tracking-wider">
+              <span className="px-2 py-0.5 rounded-md bg-[#176B4D] text-[#72C98B] font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
                 Bay {slot.slotNumber}
               </span>
-              <span className="text-xs text-gray-300 font-medium">| {parking.name}</span>
+              <span className="text-xs text-gray-300 font-medium truncate max-w-[200px] sm:max-w-none">
+                | {parking.name}
+              </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-[#72C98B]" /> Secure Checkout & Gate Pass
+            <h2 className="text-lg sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-[#72C98B] shrink-0" /> Secure Checkout & Gate Pass
             </h2>
           </div>
 
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="p-2 text-gray-300 hover:text-white rounded-full transition-colors disabled:opacity-50"
+            className="p-2 text-gray-300 hover:text-white rounded-full hover:bg-white/10 transition-colors disabled:opacity-50"
             title="Cancel and close"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        {/* Pricing & Reservation Summary Ribbon */}
-        <div className="bg-[#F7F9F5] px-6 py-3.5 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+        {/* Pricing & Reservation Summary Ribbon - Fixed under header */}
+        <div className="bg-[#F7F9F5] px-5 py-2.5 sm:px-6 sm:py-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
           <div className="flex items-center gap-4 text-gray-700">
             <div>
               <span className="text-gray-400 block text-[10px] uppercase font-bold">Vehicle Plate</span>
@@ -276,19 +278,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           <div className="text-right">
             <span className="text-gray-400 block text-[10px] uppercase font-bold">Total Amount Payable</span>
-            <span className="text-2xl font-black text-[#176B4D]">₹{totalAmount.toFixed(2)}</span>
+            <span className="text-xl sm:text-2xl font-black text-[#176B4D]">₹{totalAmount.toFixed(2)}</span>
           </div>
         </div>
 
-        {/* Error Alert */}
-        {errorMessage && (
-          <div className="mx-6 mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-semibold flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
+        {/* Scrollable Content Body */}
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
+          {/* Error Alert */}
+          {errorMessage && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-semibold flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
-        <div className="p-6 space-y-6">
           {/* Payment Method Selector Tabs */}
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
@@ -299,22 +302,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('UPI_QR')}
-                className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex items-center gap-2.5 sm:gap-3 transition-all ${
                   activeTab === 'UPI_QR'
                     ? 'border-[#176B4D] bg-[#E8F6EC]/60 ring-2 ring-[#72C98B]/30'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                     activeTab === 'UPI_QR' ? 'bg-[#176B4D] text-white' : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  <QrCode className="w-5 h-5" />
+                  <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <span className="text-xs font-black block text-[#18342A]">UPI QR Code</span>
-                  <span className="text-[10px] text-gray-500 font-medium">Instant Scan & Pay</span>
+                <div className="min-w-0">
+                  <span className="text-xs font-black block text-[#18342A] truncate">UPI QR Code</span>
+                  <span className="text-[10px] text-gray-500 font-medium block truncate">Instant Scan & Pay</span>
                 </div>
               </button>
 
@@ -322,22 +325,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('WALLET')}
-                className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex items-center gap-2.5 sm:gap-3 transition-all ${
                   activeTab === 'WALLET'
                     ? 'border-[#176B4D] bg-[#E8F6EC]/60 ring-2 ring-[#72C98B]/30'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                     activeTab === 'WALLET' ? 'bg-[#176B4D] text-white' : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  <WalletIcon className="w-5 h-5" />
+                  <WalletIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <span className="text-xs font-black block text-[#18342A]">ParkEase Wallet</span>
-                  <span className="text-[10px] text-emerald-700 font-bold">
+                <div className="min-w-0">
+                  <span className="text-xs font-black block text-[#18342A] truncate">ParkEase Wallet</span>
+                  <span className="text-[10px] text-emerald-700 font-bold block truncate">
                     Bal: ₹{wallet ? wallet.balance.toFixed(0) : '0'}
                   </span>
                 </div>
@@ -347,22 +350,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('UPI_ID')}
-                className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex items-center gap-2.5 sm:gap-3 transition-all ${
                   activeTab === 'UPI_ID'
                     ? 'border-[#176B4D] bg-[#E8F6EC]/60 ring-2 ring-[#72C98B]/30'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                     activeTab === 'UPI_ID' ? 'bg-[#176B4D] text-white' : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  <Zap className="w-5 h-5" />
+                  <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <span className="text-xs font-black block text-[#18342A]">UPI ID / Apps</span>
-                  <span className="text-[10px] text-gray-500 font-medium">GPay, PhonePe</span>
+                <div className="min-w-0">
+                  <span className="text-xs font-black block text-[#18342A] truncate">UPI ID / Apps</span>
+                  <span className="text-[10px] text-gray-500 font-medium block truncate">GPay, PhonePe</span>
                 </div>
               </button>
 
@@ -370,22 +373,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('CARD')}
-                className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex items-center gap-2.5 sm:gap-3 transition-all ${
                   activeTab === 'CARD'
                     ? 'border-[#176B4D] bg-[#E8F6EC]/60 ring-2 ring-[#72C98B]/30'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                     activeTab === 'CARD' ? 'bg-[#176B4D] text-white' : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  <CreditCard className="w-5 h-5" />
+                  <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <span className="text-xs font-black block text-[#18342A]">Cards</span>
-                  <span className="text-[10px] text-gray-500 font-medium">Visa, RuPay, MC</span>
+                <div className="min-w-0">
+                  <span className="text-xs font-black block text-[#18342A] truncate">Cards</span>
+                  <span className="text-[10px] text-gray-500 font-medium block truncate">Visa, RuPay, MC</span>
                 </div>
               </button>
 
@@ -393,22 +396,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('NET_BANKING')}
-                className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex items-center gap-2.5 sm:gap-3 transition-all ${
                   activeTab === 'NET_BANKING'
                     ? 'border-[#176B4D] bg-[#E8F6EC]/60 ring-2 ring-[#72C98B]/30'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                     activeTab === 'NET_BANKING' ? 'bg-[#176B4D] text-white' : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  <Building2 className="w-5 h-5" />
+                  <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <span className="text-xs font-black block text-[#18342A]">Net Banking</span>
-                  <span className="text-[10px] text-gray-500 font-medium">SBI, HDFC, ICICI</span>
+                <div className="min-w-0">
+                  <span className="text-xs font-black block text-[#18342A] truncate">Net Banking</span>
+                  <span className="text-[10px] text-gray-500 font-medium block truncate">SBI, HDFC, ICICI</span>
                 </div>
               </button>
 
@@ -416,22 +419,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('PAY_AT_GATE')}
-                className={`p-3 rounded-2xl border text-left flex items-center gap-3 transition-all ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left flex items-center gap-2.5 sm:gap-3 transition-all ${
                   activeTab === 'PAY_AT_GATE'
                     ? 'border-[#176B4D] bg-[#E8F6EC]/60 ring-2 ring-[#72C98B]/30'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                     activeTab === 'PAY_AT_GATE' ? 'bg-[#176B4D] text-white' : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  <Banknote className="w-5 h-5" />
+                  <Banknote className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <span className="text-xs font-black block text-[#18342A]">Pay at Gate</span>
-                  <span className="text-[10px] text-amber-700 font-bold">Pay on Arrival</span>
+                <div className="min-w-0">
+                  <span className="text-xs font-black block text-[#18342A] truncate">Pay at Gate</span>
+                  <span className="text-[10px] text-amber-700 font-bold block truncate">Pay on Arrival</span>
                 </div>
               </button>
             </div>
@@ -451,11 +454,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </span>
                 </div>
 
-                <div className="py-2 flex flex-col items-center">
-                  <div className="p-4 bg-white rounded-2xl border-2 border-[#176B4D] shadow-md inline-block">
-                    <QRCodeSVG value={upiPayload} size={180} level="H" includeMargin={false} />
+                <div className="py-1 flex flex-col items-center">
+                  <div className="p-3 bg-white rounded-2xl border-2 border-[#176B4D] shadow-md inline-block">
+                    <QRCodeSVG value={upiPayload} size={150} level="H" includeMargin={false} />
                   </div>
-                  <p className="text-xs font-mono font-bold text-gray-700 mt-2">₹{totalAmount.toFixed(2)}</p>
+                  <p className="text-xs font-mono font-bold text-gray-700 mt-1">₹{totalAmount.toFixed(2)}</p>
                 </div>
 
                 {/* Supported Apps Badges */}
